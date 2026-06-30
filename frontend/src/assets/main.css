@@ -1,0 +1,100 @@
+@import './fonts/montserrat.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-brand: #2563eb;
+  --color-surface: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-muted: #64748b;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  svg{
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    @apply m-0 font-sans text-slate-800 bg-[#F2F7F8] antialiased;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+/* Временные компоненты — постепенно заменяйте на утилиты Tailwind в шаблонах */
+@layer components {
+  .layout {
+    @apply px-5;
+  }
+
+  .box {
+    @apply mx-auto w-full max-w-[2000px];
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border-0 bg-brand px-4 py-2.5 text-white cursor-pointer;
+  }
+
+  .btn.secondary {
+    @apply bg-slate-200 text-slate-800;
+  }
+
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .card {
+    @apply rounded-xl border border-border bg-white p-4;
+  }
+
+  .grid {
+    @apply grid gap-4;
+  }
+
+  .grid.products {
+    @apply grid-cols-[repeat(auto-fill,minmax(240px,1fr))];
+  }
+
+  .field {
+    @apply mb-3.5 grid gap-1.5;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    @apply w-full rounded-lg border border-slate-300 px-3 py-2.5;
+  }
+
+  .muted {
+    @apply text-muted;
+  }
+
+  .badge {
+    @apply inline-block rounded-full bg-sky-100 px-2 py-0.5 text-sm text-sky-700;
+  }
+
+  .table {
+    @apply w-full border-collapse;
+  }
+
+  .table th,
+  .table td {
+    @apply border-b border-border px-3 py-3 text-left;
+  }
+}
