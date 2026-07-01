@@ -28,6 +28,9 @@ class CategoryController extends Controller
 
         $category = Category::create([
             'name' => $data['name'],
+            'home_title' => $data['home_title'] ?? null,
+            'home_bg_color' => $data['home_bg_color'] ?? null,
+            'home_bg_color_end' => $data['home_bg_color_end'] ?? null,
             'slug' => $this->uniqueSlug($data['name']),
             'sort_order' => $data['sort_order'] ?? 0,
             'image' => $this->storeImage($request),
@@ -55,6 +58,9 @@ class CategoryController extends Controller
 
         $category->fill([
             'name' => $data['name'],
+            'home_title' => $data['home_title'] ?? null,
+            'home_bg_color' => $data['home_bg_color'] ?? null,
+            'home_bg_color_end' => $data['home_bg_color_end'] ?? null,
             'sort_order' => $data['sort_order'] ?? $category->sort_order,
             'advantages' => $this->processAdvantages($request, $category->advantages ?? []),
         ]);
@@ -86,6 +92,9 @@ class CategoryController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'home_title' => ['nullable', 'string', 'max:255'],
+            'home_bg_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'home_bg_color_end' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,svg', 'max:4096'],
             'advantages' => ['required', 'array', 'size:3'],

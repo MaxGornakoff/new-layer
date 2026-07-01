@@ -17,6 +17,9 @@ const emptyAdvantages = () => [
 
 const form = reactive({
   name: '',
+  home_title: '',
+  home_bg_color: '#ff8f6b',
+  home_bg_color_end: '#ff6b3d',
   sort_order: 0,
   imageFile: null,
   imagePreview: null,
@@ -27,6 +30,9 @@ const form = reactive({
 function resetForm() {
   editingId.value = null
   form.name = ''
+  form.home_title = ''
+  form.home_bg_color = '#ff8f6b'
+  form.home_bg_color_end = '#ff6b3d'
   form.sort_order = 0
   form.imageFile = null
   form.imagePreview = null
@@ -60,6 +66,9 @@ function onAdvantageIconChange(index, event) {
 function startEdit(category) {
   editingId.value = category.id
   form.name = category.name
+  form.home_title = category.home_title || ''
+  form.home_bg_color = category.home_bg_color || '#ff8f6b'
+  form.home_bg_color_end = category.home_bg_color_end || '#ff6b3d'
   form.sort_order = category.sort_order
   form.imageFile = null
   form.imagePreview = null
@@ -76,6 +85,9 @@ function startEdit(category) {
 function buildFormData() {
   const formData = new FormData()
   formData.append('name', form.name)
+  formData.append('home_title', form.home_title)
+  formData.append('home_bg_color', form.home_bg_color)
+  formData.append('home_bg_color_end', form.home_bg_color_end)
   formData.append('sort_order', String(form.sort_order))
 
   if (form.imageFile) {
@@ -136,7 +148,7 @@ onMounted(load)
   <section>
     <h1>Категории</h1>
     <p class="muted">
-      Название, изображение и 3 преимущества (иконка SVG/PNG + текст). Файлы хранятся на сервере.
+      Название, изображение, настройки блока на главной и 3 преимущества (иконка SVG/PNG + текст).
     </p>
 
     <form class="card form" @submit.prevent="save">
@@ -146,6 +158,30 @@ onMounted(load)
         <span>Название</span>
         <input v-model="form.name" required />
       </label>
+
+      <label class="field">
+        <span>Название на главной</span>
+        <input v-model="form.home_title" placeholder="Второе название для блока категории" />
+        <span class="field-hint">Если пусто — на главной будет основное название.</span>
+      </label>
+
+      <div class="color-fields">
+        <label class="field">
+          <span>Цвет фона (начало градиента)</span>
+          <div class="color-input">
+            <input v-model="form.home_bg_color" type="color" />
+            <input v-model="form.home_bg_color" type="text" pattern="^#[0-9A-Fa-f]{6}$" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Цвет фона (конец градиента)</span>
+          <div class="color-input">
+            <input v-model="form.home_bg_color_end" type="color" />
+            <input v-model="form.home_bg_color_end" type="text" pattern="^#[0-9A-Fa-f]{6}$" />
+          </div>
+        </label>
+      </div>
 
       <label class="field">
         <span>Порядок сортировки</span>
@@ -212,6 +248,7 @@ onMounted(load)
           <tr>
             <th>Изображение</th>
             <th>Название</th>
+            <th>На главной</th>
             <th>Slug</th>
             <th>Порядок</th>
             <th></th>
@@ -224,6 +261,24 @@ onMounted(load)
               <span v-else class="muted">—</span>
             </td>
             <td>{{ category.name }}</td>
+            <td>
+              <span v-if="category.home_title">{{ category.home_title }}</span>
+              <span v-else class="muted">—</span>
+              <div v-if="category.home_bg_color || category.home_bg_color_end" class="color-preview">
+                <span
+                  v-if="category.home_bg_color"
+                  class="color-preview__swatch"
+                  :style="{ backgroundColor: category.home_bg_color }"
+                  :title="category.home_bg_color"
+                />
+                <span
+                  v-if="category.home_bg_color_end"
+                  class="color-preview__swatch"
+                  :style="{ backgroundColor: category.home_bg_color_end }"
+                  :title="category.home_bg_color_end"
+                />
+              </div>
+            </td>
             <td>{{ category.slug }}</td>
             <td>{{ category.sort_order }}</td>
             <td class="row-actions">
@@ -296,5 +351,48 @@ onMounted(load)
 
 .error {
   color: #dc2626;
+}
+
+.field-hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.color-fields {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.color-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-input input[type='color'] {
+  width: 3rem;
+  height: 2.5rem;
+  padding: 0.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.color-input input[type='text'] {
+  flex: 1;
+}
+
+.color-preview {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.color-preview__swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
 }
 </style>

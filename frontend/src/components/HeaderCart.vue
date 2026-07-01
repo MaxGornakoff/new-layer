@@ -2,30 +2,10 @@
 import { RouterLink } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import AppIcon from '@/components/AppIcon.vue'
+import CartOrderPackNotice from '@/components/CartOrderPackNotice.vue'
+import CartQuantityControl from '@/components/CartQuantityControl.vue'
 
 const cart = useCartStore()
-
-function increaseQuantity(productId) {
-  const item = cart.items.find((entry) => entry.product_id === productId)
-  if (!item) return
-
-  const maxQuantity = item.stock_quantity ?? item.quantity
-  if (item.quantity < maxQuantity) {
-    cart.updateQuantity(productId, item.quantity + 1)
-  }
-}
-
-function decreaseQuantity(productId) {
-  const item = cart.items.find((entry) => entry.product_id === productId)
-  if (!item) return
-
-  if (item.quantity <= 1) {
-    cart.removeItem(productId)
-    return
-  }
-
-  cart.updateQuantity(productId, item.quantity - 1)
-}
 </script>
 
 <template>
@@ -47,27 +27,15 @@ function decreaseQuantity(productId) {
             </span>
           </div>
 
-          <div class="header-cart__item-actions">
-            <div class="header-cart__quantity">
-              <button
-                type="button"
-                class="header-cart__quantity-btn"
-                aria-label="Уменьшить количество"
-                @click.stop="decreaseQuantity(item.product_id)"
-              >
-                −
-              </button>
-              <span class="header-cart__quantity-value">{{ item.quantity }}</span>
-              <button
-                type="button"
-                class="header-cart__quantity-btn"
-                aria-label="Увеличить количество"
-                :disabled="item.quantity >= item.stock_quantity"
-                @click.stop="increaseQuantity(item.product_id)"
-              >
-                +
-              </button>
-            </div>
+            <div class="header-cart__item-actions">
+              <div @click.stop>
+                <CartQuantityControl
+                  compact
+                  :product-id="item.product_id"
+                  :quantity="item.quantity"
+                  :max-quantity="item.stock_quantity"
+                />
+              </div>
 
             <button
               type="button"
@@ -82,11 +50,17 @@ function decreaseQuantity(productId) {
       </ul>
 
       <div class="header-cart__footer">
+        <CartOrderPackNotice compact class="mb-3" />
+
         <p class="header-cart__total">
           Итого: <strong>{{ cart.totalPrice.toLocaleString('ru-RU') }} ₽</strong>
         </p>
-        <RouterLink to="/cart" class="btn header-cart__checkout" @click.stop>
-          К оформлению
+        <RouterLink
+          :to="cart.canCheckout ? '/checkout' : '/cart'"
+          class="btn header-cart__checkout"
+          @click.stop
+        >
+          {{ cart.canCheckout ? 'К оформлению' : 'Добрать в корзине' }}
         </RouterLink>
       </div>
     </div>
@@ -205,40 +179,6 @@ function decreaseQuantity(productId) {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-}
-
-.header-cart__quantity {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-.header-cart__quantity-btn {
-  width: 1.75rem;
-  height: 1.75rem;
-  border: none;
-  background: #f8fafc;
-  cursor: pointer;
-  font: inherit;
-  line-height: 1;
-}
-
-.header-cart__quantity-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.header-cart__quantity-btn:hover:not(:disabled) {
-  background: #e2e8f0;
-}
-
-.header-cart__quantity-value {
-  min-width: 1.5rem;
-  text-align: center;
-  font-weight: 600;
 }
 
 .header-cart__remove {

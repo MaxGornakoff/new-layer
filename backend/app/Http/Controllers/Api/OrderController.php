@@ -13,10 +13,12 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
+    private const ORDER_QUANTITY_STEP = 10;
+
     public function index(Request $request): JsonResponse
     {
         $orders = Order::query()
-            ->with('items')
+            ->with(['items.product:id,slug'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->paginate(10);
@@ -30,7 +32,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->load('items');
+        $order->load(['items.product:id,slug']);
 
         return response()->json(['data' => $order]);
     }
@@ -47,6 +49,14 @@ class OrderController extends Controller
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
+
+        $totalQuantity = collect($data['items'])->sum('quantity');
+
+        if ($totalQuantity % self::ORDER_QUANTITY_STEP !== 0) {
+            return response()->json([
+                'message' => 'Заказ оформляется кратно 10 катушкам. Измените количество в корзине.',
+            ], 422);
+        }
 
         $order = DB::transaction(function () use ($data, $request) {
             $productIds = collect($data['items'])->pluck('product_id');

@@ -14,6 +14,9 @@ class CategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'home_title' => $this->home_title,
+            'home_bg_color' => $this->home_bg_color,
+            'home_bg_color_end' => $this->home_bg_color_end,
             'slug' => $this->slug,
             'sort_order' => $this->sort_order,
             'image' => $this->image,

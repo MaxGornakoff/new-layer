@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { getOrderPackStatus, ORDER_PACK_SIZE } from '@/lib/orderPack'
 
 const STORAGE_KEY = 'filament-shop-cart'
 
@@ -24,6 +25,12 @@ export const useCartStore = defineStore('cart', () => {
 
   const totalPrice = computed(() =>
     items.value.reduce((sum, item) => sum + item.price * item.quantity, 0),
+  )
+
+  const packStatus = computed(() => getOrderPackStatus(totalItems.value))
+
+  const canCheckout = computed(
+    () => items.value.length > 0 && packStatus.value.canCheckout,
   )
 
   function addItem(product, quantity = 1) {
@@ -110,6 +117,9 @@ export const useCartStore = defineStore('cart', () => {
     items,
     totalItems,
     totalPrice,
+    packStatus,
+    canCheckout,
+    orderPackSize: ORDER_PACK_SIZE,
     addItem,
     updateQuantity,
     removeItem,

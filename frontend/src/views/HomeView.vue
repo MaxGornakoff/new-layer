@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink, useRoute } from 'vue-router'
 import HeroSlider from '@/components/HeroSlider.vue'
+import HomeCategories from '@/components/HomeCategories.vue'
 
 const route = useRoute()
 </script>
@@ -17,9 +18,7 @@ const route = useRoute()
         (<RouterLink to="/login?redirect=/admin">admin@shop.local</RouterLink>).
       </p>
 
-      <section id="about-us" class="home-about">
-        <!-- Блок «О нас» — вёрстка будет позже -->
-      </section>
+      <HomeCategories />
     </div>
   </div>
 </template>
@@ -36,7 +35,6 @@ const route = useRoute()
 .home__hero {
   position: relative;
   display: grid;
-  margin-bottom: 0.5rem;
 }
 
 .home__hero-slider,
@@ -50,10 +48,6 @@ const route = useRoute()
   pointer-events: none;
 }
 
-.home__content {
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
 
 .home-about {
   min-height: 120px;

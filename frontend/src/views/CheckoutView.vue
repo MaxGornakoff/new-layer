@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import api from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
+import CartOrderPackNotice from '@/components/CartOrderPackNotice.vue'
 
 const auth = useAuthStore()
 const cart = useCartStore()
@@ -20,7 +21,7 @@ const form = reactive({
 })
 
 async function submit() {
-  if (!cart.items.length) return
+  if (!cart.items.length || !cart.canCheckout) return
 
   loading.value = true
   error.value = ''
@@ -44,6 +45,8 @@ async function submit() {
   <section>
     <h1>Оформление заказа</h1>
     <p class="muted">Оплата при получении. Онлайн-оплата будет добавлена позже.</p>
+
+    <CartOrderPackNotice v-if="cart.items.length" show-catalog-link class="mb-4" />
 
     <form class="card checkout" @submit.prevent="submit">
       <label class="field">
@@ -70,8 +73,8 @@ async function submit() {
       <p><strong>Сумма заказа: {{ cart.totalPrice.toLocaleString('ru-RU') }} ₽</strong></p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button class="btn" type="submit" :disabled="loading || !cart.items.length">
-        {{ loading ? 'Отправка...' : 'Подтвердить заказ' }}
+      <button class="btn" type="submit" :disabled="loading || !cart.canCheckout">
+        {{ loading ? 'Отправка...' : cart.canCheckout ? 'Подтвердить заказ' : `Нужно кратно ${cart.orderPackSize} катушек` }}
       </button>
     </form>
   </section>

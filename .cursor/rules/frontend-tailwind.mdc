@@ -1,0 +1,41 @@
+---
+description: Стилизация фронтенда — в первую очередь Tailwind
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# Tailwind-first styling
+
+При вёрстке и правках UI во `frontend/` **по умолчанию используй утилиты Tailwind** прямо в шаблонах Vue.
+
+## Порядок выбора
+
+1. **Tailwind-классы** в `class` — основной способ
+2. **`:style` / inline** — только для динамических значений (цвета из API, градиенты из админки и т.п.)
+3. **`<style scoped>`** — только если Tailwind не покрывает задачу (сложные псевдоэлементы, `:deep()` для `v-html`, анимации)
+4. **`main.css` / `@layer`** — только для глобальных примитивов проекта (`.btn`, `.box`, `.layout`, шрифты, reset)
+
+## Примеры
+
+```vue
+<!-- ✅ предпочтительно -->
+<div class="flex items-center gap-4 rounded-[20px] bg-white p-7">
+
+<!-- ✅ динамика из API -->
+<div class="rounded-[20px] p-7" :style="{ background: gradient }">
+
+<!-- ⚠️ только при необходимости -->
+<style scoped>
+.card :deep(h2) { font-size: 2rem; }
+</style>
+```
+
+## Не делать без причины
+
+- Не дублировать Tailwind в BEM-классах со scoped CSS
+- Не добавлять новые глобальные классы в `main.css`, если хватает утилит
+- Не смешивать три подхода на одном элементе без нужды
+
+## Адаптив
+
+Используй префиксы Tailwind (`max-md:`, `lg:` и т.д.) вместо отдельных `@media` в scoped CSS.

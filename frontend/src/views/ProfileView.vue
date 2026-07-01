@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import api from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AppLoader from '@/components/AppLoader.vue'
+import ClientOrdersList from '@/components/ClientOrdersList.vue'
 
 const auth = useAuthStore()
 const orders = ref([])
@@ -32,29 +33,11 @@ onMounted(loadOrders)
     </div>
 
     <h2 id="orders">Мои заказы</h2>
+    <p class="muted">Нажмите на заказ, чтобы посмотреть состав и перейти к товарам.</p>
 
     <AppLoader v-if="loading" />
 
-    <div v-else-if="orders.length" class="card">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Номер</th>
-            <th>Статус</th>
-            <th>Сумма</th>
-            <th>Дата</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="order in orders" :key="order.id">
-            <td>{{ order.number }}</td>
-            <td>{{ order.status }}</td>
-            <td>{{ Number(order.total).toLocaleString('ru-RU') }} ₽</td>
-            <td>{{ new Date(order.created_at).toLocaleString('ru-RU') }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ClientOrdersList v-else-if="orders.length" :orders="orders" />
 
     <p v-else class="muted">Заказов пока нет.</p>
   </section>

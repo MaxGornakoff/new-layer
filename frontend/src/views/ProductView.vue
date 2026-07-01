@@ -2,15 +2,11 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api/client'
-import { useCartStore } from '@/stores/cart'
-import { useToastStore } from '@/stores/toast'
 import AppLoader from '@/components/AppLoader.vue'
+import CartProductQuantityControl from '@/components/CartProductQuantityControl.vue'
 
 const route = useRoute()
-const cart = useCartStore()
-const toast = useToastStore()
 const product = ref(null)
-const quantity = ref(1)
 const loading = ref(true)
 
 async function loadProduct() {
@@ -21,11 +17,6 @@ async function loadProduct() {
   } finally {
     loading.value = false
   }
-}
-
-function addToCart() {
-  const result = cart.addItem(product.value, quantity.value)
-  toast.show(result.message, result.success ? 'success' : 'error')
 }
 
 watch(
@@ -57,12 +48,7 @@ onMounted(loadProduct)
 
     <p class="price">{{ Number(product.price).toLocaleString('ru-RU') }} ₽</p>
 
-    <div class="actions">
-      <input v-model.number="quantity" type="number" min="1" :max="product.stock_quantity" />
-      <button class="btn" :disabled="product.stock_quantity < 1" @click="addToCart">
-        В корзину
-      </button>
-    </div>
+    <CartProductQuantityControl :product="product" />
   </section>
 
   <p v-else class="muted">Товар не найден.</p>
@@ -82,16 +68,5 @@ onMounted(loadProduct)
 .price {
   font-size: 1.5rem;
   font-weight: 700;
-}
-
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.actions input {
-  width: 80px;
-  padding: 0.5rem;
 }
 </style>

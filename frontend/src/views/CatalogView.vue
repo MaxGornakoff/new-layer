@@ -143,6 +143,7 @@ onMounted(async () => {
 <template>
   <section class="catalog">
     <h1>{{ pageTitle }}</h1>
+    <p class="muted">Заказ оформляется кратно 10 катушкам — в любом составе категорий.</p>
 
     <div v-if="activeFilters.length" class="active-filters">
       <span v-for="filter in activeFilters" :key="filter.key" class="active-filters__chip">
