@@ -64,30 +64,128 @@ onUnmounted(() => {
 <template>
   <section
     ref="sectionRef"
-    class="hero-digits absolute right-0 bottom-0 flex bg-[#F2F7F8] rounded-tl-[20px] box-border pr-0 pb-0 p-5 gap-5"
+    class="hero-digits"
+    aria-label="Ключевые показатели"
   >
-    <div class="hero-digits__item-rectangle absolute bottom-[-1px] left-[-24px] w-[25px] h-[26px]">
+    <div class="hero-digits__corner hero-digits__corner--bl" aria-hidden="true">
       <AppIcon name="rectangle" :size="25" />
     </div>
 
     <div
       v-for="(digit, index) in digits"
       :key="digit.number"
-      class="hero-digits__item p-6 rounded-[12px] bg-white min-w-[165px]"
+      class="hero-digits__item"
     >
-      <div
-        class="hero-digits__item-number text-[56px] flex justify-center items-center leading-[1.1] tabular-nums"
-      >
+      <div class="hero-digits__number tabular-nums">
         {{ displayValues[index] }}
       </div>
-      <div class="hero-digits__item-text flex flex-col gap-1 justify-center items-center ">
-        <p class="text-[11px] font-bold">{{ digit.text }}</p>
-        <p class="text-[11px]">{{ digit.subtitle }}</p>
+      <div class="hero-digits__text">
+        <p class="hero-digits__label">{{ digit.text }}</p>
+        <p class="hero-digits__subtitle">{{ digit.subtitle }}</p>
       </div>
     </div>
 
-    <div class="hero-digits__item-rectangle absolute top-[-25px] right-[-1px] w-[25px] h-[26px]">
+    <div class="hero-digits__corner hero-digits__corner--tr" aria-hidden="true">
       <AppIcon name="rectangle" :size="25" />
     </div>
   </section>
 </template>
+
+<style scoped>
+.hero-digits {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .hero-digits {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    gap: 1.25rem;
+    box-sizing: border-box;
+    padding: 1.25rem 0 0 1.25rem;
+    border-top-left-radius: 20px;
+    background: #f2f7f8;
+    pointer-events: none;
+  }
+}
+
+.hero-digits__item {
+  min-width: 165px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.hero-digits__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  line-height: 1.1;
+}
+
+.hero-digits__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.hero-digits__label,
+.hero-digits__subtitle {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.hero-digits__label {
+  font-weight: 700;
+}
+
+.hero-digits__corner {
+  position: absolute;
+  width: 25px;
+  height: 26px;
+  color: #f2f7f8;
+}
+
+.hero-digits__corner--bl {
+  bottom: -1px;
+  left: -24px;
+}
+
+.hero-digits__corner--tr {
+  top: -25px;
+  right: -1px;
+}
+
+@media (max-width: 1279px) {
+  .hero-digits {
+    gap: 0.75rem;
+    padding: 0.85rem 0 0 0.85rem;
+  }
+
+  .hero-digits__item {
+    min-width: 120px;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .hero-digits__number {
+    font-size: 36px;
+  }
+
+  .hero-digits__label,
+  .hero-digits__subtitle {
+    font-size: 10px;
+  }
+
+  .hero-digits__corner {
+    display: none;
+  }
+}
+</style>

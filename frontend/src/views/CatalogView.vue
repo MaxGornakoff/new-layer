@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import { useSiteStore } from '@/stores/site'
@@ -11,6 +11,7 @@ const categories = ref([])
 const products = ref([])
 const filterGroups = ref([])
 const loading = ref(true)
+const filtersOpen = ref(false)
 const route = useRoute()
 const router = useRouter()
 const site = useSiteStore()
@@ -94,6 +95,17 @@ const activeFilters = computed(() => {
   return items
 })
 
+const activeFilterCount = computed(() => activeFilters.value.length)
+
+function productsWord(count) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod100 >= 11 && mod100 <= 14) return 'товаров'
+  if (mod10 === 1) return 'товар'
+  if (mod10 >= 2 && mod10 <= 4) return 'товара'
+  return 'товаров'
+}
+
 function buildQuery(nextFilters) {
   const query = {}
 
@@ -146,12 +158,27 @@ async function loadProducts() {
   }
 }
 
-function applyFilters() {
+function openFilters() {
+  filtersOpen.value = true
+}
+
+function closeFilters() {
+  filtersOpen.value = false
+}
+
+function applyFilters({ close = true } = {}) {
   router.replace({ name: 'catalog', query: buildQuery(filters.value) })
+  if (close) closeFilters()
+}
+
+function onFiltersApply() {
+  // При авто-применении не закрываем шторку — пользователь ещё выбирает опции
+  applyFilters({ close: !site.catalogAutoApplyFilters })
 }
 
 function resetFilters() {
   router.push({ name: 'catalog' })
+  closeFilters()
 }
 
 function removeFilter(filter) {
@@ -174,6 +201,12 @@ function removeFilter(filter) {
   router.replace({ name: 'catalog', query: buildQuery(nextFilters) })
 }
 
+function onKeydown(event) {
+  if (event.key === 'Escape' && filtersOpen.value) {
+    closeFilters()
+  }
+}
+
 watch(
   () => route.query,
   async () => {
@@ -182,21 +215,57 @@ watch(
   },
 )
 
+watch(filtersOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
 onMounted(async () => {
   syncFiltersFromRoute()
+  window.addEventListener('keydown', onKeydown)
   await Promise.all([loadCategories(), loadFilterOptions(), loadProducts()])
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
 })
 </script>
 
 <template>
-  <section class="catalog">
-    <div class="title-container inline-flex flex-col gap-2.5 my-10">
-      <h1 class="text-3xl font-semibold uppercase">{{ pageTitle }}</h1>
-      <p class="muted text-[#222222] text-[18px] flex items-center gap-2.5 font-medium">
-        <span class="rounded-full text-sm font-semibold border-[1.5px] border-[#222222] p-2 size-5 min-w-5 inline-flex items-center justify-center">i</span>
+  <section class="catalog mx-auto w-full max-w-[1440px]">
+    <div class="title-container my-6 flex flex-col gap-2 sm:my-8 sm:gap-2.5 lg:my-10">
+      <h1 class="m-0 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl">
+        {{ pageTitle }}
+      </h1>
+      <p
+        class="muted m-0 flex items-start gap-2 text-[14px] font-medium leading-snug text-[#222222] sm:items-center sm:gap-2.5 sm:text-[16px] lg:text-[18px]"
+      >
+        <span
+          class="mt-0.5 inline-flex size-5 min-w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#222222] p-0 text-xs font-semibold sm:mt-0 sm:text-sm"
+        >
+          i
+        </span>
         Заказ оформляется кратно 10 катушкам — в любом составе категорий.
       </p>
     </div>
+
+    <div class="catalog-toolbar">
+      <button
+        type="button"
+        class="catalog-toolbar__filters"
+        @click="openFilters"
+      >
+        Фильтры
+        <span v-if="activeFilterCount" class="catalog-toolbar__badge">
+          {{ activeFilterCount }}
+        </span>
+      </button>
+
+      <p v-if="!loading" class="catalog-toolbar__count">
+        {{ products.length }} {{ productsWord(products.length) }}
+      </p>
+    </div>
+
     <div v-if="activeFilters.length" class="active-filters">
       <span
         v-for="filter in activeFilters"
@@ -214,32 +283,101 @@ onMounted(async () => {
         </button>
       </span>
       <button class="btn secondary active-filters__reset" type="button" @click="resetFilters">
-        Показать все товары
+        Показать все
       </button>
     </div>
 
     <div class="catalog-layout">
-      <ProductFilters
-        v-model="filters"
-        :categories="categories"
-        :groups="filterGroups"
-        :auto-apply="site.catalogAutoApplyFilters"
-        @apply="applyFilters"
-        @reset="resetFilters"
+      <div
+        class="catalog-filters-backdrop"
+        :class="{ 'is-open': filtersOpen }"
+        aria-hidden="true"
+        @click="closeFilters"
       />
 
-      <div>
+      <aside
+        class="catalog-filters"
+        :class="{ 'is-open': filtersOpen }"
+        :aria-hidden="false"
+      >
+        <div class="catalog-filters__header">
+          <h2 class="catalog-filters__title">Фильтры</h2>
+          <button
+            type="button"
+            class="catalog-filters__close"
+            aria-label="Закрыть фильтры"
+            @click="closeFilters"
+          >
+            ×
+          </button>
+        </div>
+
+        <ProductFilters
+          v-model="filters"
+          :categories="categories"
+          :groups="filterGroups"
+          :auto-apply="site.catalogAutoApplyFilters"
+          @apply="onFiltersApply"
+          @reset="resetFilters"
+        />
+      </aside>
+
+      <div class="catalog-results min-w-0">
         <AppLoader v-if="loading" />
         <div v-else-if="products.length" class="grid products">
           <ProductCard v-for="product in products" :key="product.id" :product="product" />
         </div>
-        <p v-else class="muted">Товары не найдены.</p>
+        <p v-else class="muted py-8 text-center sm:text-left">Товары не найдены.</p>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.catalog-toolbar__filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #222;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.catalog-toolbar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #3b72ff;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.catalog-toolbar__count {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
 .active-filters {
   display: flex;
   flex-wrap: wrap;
@@ -252,11 +390,12 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  max-width: 100%;
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
   background: #e0f2fe;
   color: #0369a1;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .active-filters__remove {
@@ -281,18 +420,115 @@ onMounted(async () => {
 
 .active-filters__reset {
   margin-left: 0.25rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
 }
 
 .catalog-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: start;
 }
 
-@media (max-width: 900px) {
+.catalog-filters-backdrop {
+  display: none;
+}
+
+.catalog-filters__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.catalog-filters__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.catalog-filters__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #222;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Mobile drawer */
+@media (max-width: 899px) {
+  .catalog-filters-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: block;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .catalog-filters-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .catalog-filters {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 360px);
+    height: 100%;
+    padding: 1rem 1rem 1.5rem;
+    background: #f2f7f8;
+    box-shadow: 8px 0 32px rgba(15, 23, 42, 0.18);
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    overflow: auto;
+  }
+
+  .catalog-filters.is-open {
+    transform: translateX(0);
+  }
+}
+
+@media (min-width: 900px) {
+  .catalog-toolbar {
+    display: none;
+  }
+
+  .catalog-filters__header {
+    display: none;
+  }
+
   .catalog-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 280px 1fr;
+    gap: 1.25rem;
+  }
+
+  .catalog-filters {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .catalog-filters-backdrop {
+    display: none !important;
   }
 }
 </style>

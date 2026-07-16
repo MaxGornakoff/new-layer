@@ -14,34 +14,34 @@ const imageAlt = 'Производство филамента: линия экс
   <section
     id="about-us"
     aria-label="О производстве"
-    class="mt-30 mb-15 max-w-[1440px] mx-auto"
+    class="mx-auto mt-12 mb-10 max-w-[1440px] sm:mt-20 sm:mb-12 lg:mt-30 lg:mb-15"
   >
     <div
-      class="flex items-center gap-8 lg:gap-12 xl:gap-15"
+      class="flex flex-col gap-6 sm:gap-8 lg:flex-row lg:items-center lg:gap-12 xl:gap-15"
     >
-      <div class="min-w-0">
+      <div class="min-w-0 flex-1">
         <h2
-          class="m-0 text-[28px] leading-tight font-semibold uppercase tracking-tight text-[#222222] sm:text-[18px] lg:text-[30px]"
+          class="m-0 text-[22px] leading-tight font-semibold uppercase tracking-tight text-[#222222] sm:text-[26px] lg:text-[30px]"
         >
           {{ title }}
         </h2>
 
-        <div class="mt-5 flex flex-col gap-4 sm:mt-6 sm:gap-5 ">
+        <div class="mt-4 flex flex-col gap-3.5 sm:mt-6 sm:gap-5">
           <p
             v-for="(text, index) in paragraphs"
             :key="index"
-            class="m-0 text-sm leading-relaxed text-[#222222] sm:text-[20px] sm:leading-[1.61]"
+            class="m-0 text-[14px] leading-relaxed text-[#222222] sm:text-[18px] sm:leading-[1.61] lg:text-[20px]"
           >
             {{ text }}
           </p>
         </div>
       </div>
 
-      <div class="min-w-0 max-h-[448px]">
+      <div class="min-w-0 flex-1 lg:max-h-[448px] lg:max-w-[52%]">
         <img
           :src="imageSrc"
           :alt="imageAlt"
-          class="block h-full w-full rounded-[20px] object-cover"
+          class="block aspect-[4/3] h-auto w-full rounded-[16px] object-cover sm:rounded-[20px] lg:aspect-auto lg:h-full lg:max-h-[448px]"
           loading="lazy"
         />
       </div>

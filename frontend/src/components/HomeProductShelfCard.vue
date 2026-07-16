@@ -40,13 +40,13 @@ function openProduct() {
 
 <template>
   <article
-    class="flex cursor-pointer flex-col rounded-[20px] bg-white p-7 transition-shadow duration-200 hover:shadow-[0_12px_32px_rgba(15,23,42,0.1)]"
-    :class="fluid ? 'min-w-0 w-full' : 'w-[220px] shrink-0 sm:w-[232px]'"
+    class="flex cursor-pointer flex-col rounded-[16px] bg-white p-3.5 transition-shadow duration-200 hover:shadow-[0_12px_32px_rgba(15,23,42,0.1)] sm:rounded-[20px] sm:p-5 lg:p-7"
+    :class="fluid ? 'min-w-0 w-full' : 'w-[168px] shrink-0 sm:w-[200px] lg:w-[232px]'"
     @click="openProduct"
   >
-    <div class="relative mb-3">
+    <div class="relative mb-2 sm:mb-3">
       <span
-        class="absolute left-0 top-0 z-10 rounded-full px-2.5 py-1 text-[12px] font-medium text-white"
+        class="absolute left-0 top-0 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white sm:px-2.5 sm:py-1 sm:text-[12px]"
         :class="stockBadge.className"
       >
         {{ stockBadge.label }}
@@ -55,20 +55,20 @@ function openProduct() {
       <ProductImagesSlider :images="product.images" />
     </div>
 
-    <div class="mt-auto flex flex-col gap-2">
+    <div class="mt-auto flex flex-col gap-1.5 sm:gap-2">
       <ProductPrice :product="product" size="md" />
 
-      <h3 class="m-0 line-clamp-2 text-[16px] leading-snug font-regular text-[#222222]">
+      <h3 class="m-0 line-clamp-2 text-[13px] leading-snug font-normal text-[#222222] sm:text-[15px] lg:text-[16px]">
         {{ product.name }}
       </h3>
 
       <p
-        class="m-0 flex items-center gap-1 text-[16px] text-slate-400"
+        class="m-0 flex items-center gap-1 text-[12px] text-slate-400 sm:text-[14px] lg:text-[16px]"
         :title="`Минимальный заказ кратен ${ORDER_PACK_SIZE} катушкам`"
       >
         <span>Заказ от {{ ORDER_PACK_SIZE }} шт.</span>
         <span
-          class="inline-flex size-4 items-center justify-center rounded-full border border-slate-400 text-[10px] leading-none"
+          class="inline-flex size-3.5 items-center justify-center rounded-full border border-slate-400 text-[9px] leading-none sm:size-4 sm:text-[10px]"
           aria-hidden="true"
         >
           i

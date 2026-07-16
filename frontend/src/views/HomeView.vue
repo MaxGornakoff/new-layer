@@ -12,7 +12,7 @@ const route = useRoute()
 
 <template>
   <div class="home">
-    <div class="box home__hero h-[calc(100vh-72px)] pb-5 relative">
+    <div class="box home__hero">
       <HeroSlider class="home__hero-slider" />
     </div>
 
@@ -42,17 +42,31 @@ const route = useRoute()
 
 .home__hero {
   position: relative;
-  display: grid;
+  width: 100%;
+  height: min(68svh, 440px);
+  min-height: 340px;
+  margin-bottom: 1rem;
 }
 
-.home__hero-slider,
-.home__hero-digits {
-  grid-area: 1 / 1;
+@media (min-width: 640px) {
+  .home__hero {
+    height: min(70svh, 520px);
+    min-height: 420px;
+    margin-bottom: 1.25rem;
+  }
 }
 
-.home__hero-digits {
-  align-self: end;
-  z-index: 3;
-  pointer-events: none;
+@media (min-width: 1024px) {
+  .home__hero {
+    height: calc(100svh - 72px - 1.25rem);
+    min-height: 560px;
+    margin-bottom: 1.25rem;
+  }
+}
+
+.home__hero-slider {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>

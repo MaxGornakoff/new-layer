@@ -28,26 +28,26 @@ const features = [
 <template>
   <section
     aria-label="Преимущества производства"
-    class="mb-15"
+    class="mb-10 sm:mb-12 lg:mb-15"
   >
-    <div class="flex w-full gap-4 max-lg:flex-col lg:gap-5">
+    <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:flex lg:gap-5">
       <article
         v-for="item in features"
         :key="item.icon"
-        class="flex min-w-0 flex-1 items-center gap-4 rounded-[20px] bg-white px-4 py-4 sm:gap-5 sm:px-7 sm:py-7"
+        class="flex min-w-0 flex-1 items-start gap-3.5 rounded-[16px] bg-white px-4 py-4 sm:items-center sm:gap-5 sm:rounded-[20px] sm:px-6 sm:py-6 lg:px-7 lg:py-7"
       >
         <div
-          class="flex size-[88px] shrink-0 items-center justify-center rounded-full bg-[#3771FE] text-white"
+          class="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#3771FE] text-white sm:size-[72px] lg:size-[88px]"
           aria-hidden="true"
         >
-          <AppIcon :name="item.icon" :size="40" />
+          <AppIcon :name="item.icon" class="feature-icon" :size="40" />
         </div>
 
         <div class="min-w-0">
-          <h3 class="m-0 text-[18px] leading-snug font-semibold text-[#222222]">
+          <h3 class="m-0 text-[16px] leading-snug font-semibold text-[#222222] sm:text-[18px]">
             {{ item.title }}
           </h3>
-          <p class="m-0 mt-2.5 text-[16px] leading-[1.61] font-normal text-[#222222]">
+          <p class="m-0 mt-1.5 text-[14px] leading-[1.5] font-normal text-[#222222] sm:mt-2.5 sm:text-[15px] sm:leading-[1.61] lg:text-[16px]">
             {{ item.text }}
           </p>
         </div>
@@ -55,3 +55,24 @@ const features = [
     </div>
   </section>
 </template>
+
+<style scoped>
+.feature-icon {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+@media (min-width: 640px) {
+  .feature-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .feature-icon {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+</style>

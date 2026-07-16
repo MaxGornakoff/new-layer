@@ -186,11 +186,11 @@ function imageTransform(index) {
 
     <div
       v-else-if="hasMultipleImages && isThumbs"
-      class="flex gap-3 sm:gap-4"
+      class="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4"
       @click.capture="onAreaClick"
     >
       <div
-        class="!pt-12 product-slider__thumbs flex shrink-0 flex-row gap-2 overflow-x-auto sm:max-h-[min(100%,520px)] sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto"
+        class="product-slider__thumbs flex shrink-0 flex-row gap-2 overflow-x-auto pb-0.5 sm:max-h-[min(100%,520px)] sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto sm:pt-10"
         role="tablist"
         aria-label="Миниатюры фото"
       >
@@ -199,7 +199,7 @@ function imageTransform(index) {
           :key="img.url + i"
           type="button"
           role="tab"
-          class="cursor-pointer product-slider__thumb relative size-14 shrink-0 overflow-hidden rounded-[12px] border-2 border-solid bg-[#F2F7F8] p-0 transition-[border-color] sm:size-16"
+          class="product-slider__thumb relative size-12 shrink-0 cursor-pointer overflow-hidden rounded-[10px] border-2 border-solid bg-[#F2F7F8] p-0 transition-[border-color] sm:size-14 sm:rounded-[12px] lg:size-16"
           :class="i === activeIndex ? 'is-active' : 'is-idle'"
           :aria-selected="i === activeIndex"
           :aria-label="`Фото ${i + 1}`"
@@ -216,7 +216,7 @@ function imageTransform(index) {
       <div class="relative min-w-0 flex-1 overflow-hidden rounded-xl">
         <div
           ref="viewportRef"
-          class="relative aspect-[4/3] touch-pan-y sm:aspect-[1/1]"
+          class="relative aspect-square touch-pan-y sm:aspect-[1/1]"
           :class="isDragging ? 'touch-none select-none' : ''"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
@@ -236,24 +236,6 @@ function imageTransform(index) {
             :style="{ transform: imageTransform(i) }"
           />
         </div>
-
-        <button
-          type="button"
-          class="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/90 text-slate-900 shadow-md sm:hidden"
-          aria-label="Предыдущее фото"
-          @click.stop="prev($event)"
-        >
-          <AppIcon name="chevron-left" :size="14" />
-        </button>
-
-        <button
-          type="button"
-          class="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/90 text-slate-900 shadow-md sm:hidden"
-          aria-label="Следующее фото"
-          @click.stop="next($event)"
-        >
-          <AppIcon name="chevron-right" :size="14" />
-        </button>
       </div>
     </div>
 
@@ -356,12 +338,5 @@ function imageTransform(index) {
 
 .product-slider__thumb.is-active {
   border-color: #3b72ff;
-}
-
-/* На мобиле миниатюры сверху горизонтально — удобнее, чем узкая колонка */
-@media (max-width: 639px) {
-  .product-slider--thumbs > .flex {
-    flex-direction: column-reverse;
-  }
 }
 </style>

@@ -65,18 +65,18 @@ const currentPrice = computed(() => Number(props.product.price))
 }
 
 .product-price--md .product-price__current {
-  font-size: 24px;
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
 }
 
 .product-price--md .product-price__compare {
-  font-size: 18px;
+  font-size: clamp(0.875rem, 2vw, 1.125rem);
 }
 
 .product-price--lg .product-price__current {
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
 }
 
 .product-price--lg .product-price__compare {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
 }
 </style>

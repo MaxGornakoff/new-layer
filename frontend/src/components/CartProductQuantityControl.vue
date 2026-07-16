@@ -151,7 +151,7 @@ onUnmounted(clearCommitTimer)
     <button
       v-if="inCartQuantity === 0"
       type="button"
-      class="flex h-11 cursor-pointer w-full items-center justify-center gap-2 rounded-full border-0 bg-[#3B72FF] text-[16px] font-medium text-white transition-colors hover:bg-[#2f63ef] disabled:cursor-not-allowed disabled:bg-slate-300"
+      class="flex h-10 cursor-pointer w-full items-center justify-center gap-2 rounded-full border-0 bg-[#3B72FF] text-[14px] font-medium text-white transition-colors hover:bg-[#2f63ef] disabled:cursor-not-allowed disabled:bg-slate-300 sm:h-11 sm:text-[16px]"
       :disabled="isDisabled"
       @click="addToCart"
     >
@@ -161,7 +161,7 @@ onUnmounted(clearCommitTimer)
 
     <div
       v-else
-      class="flex h-11 w-full items-stretch overflow-hidden rounded-full bg-[#3B72FF] text-white"
+      class="flex h-10 w-full items-stretch overflow-hidden rounded-full bg-[#3B72FF] text-white sm:h-11"
     >
       <button
         type="button"

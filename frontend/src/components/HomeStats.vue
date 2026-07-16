@@ -24,22 +24,23 @@ const stats = [
 </script>
 
 <template>
-  <section aria-label="Показатели компании" class="my-10 lg:my-15">
+  <section aria-label="Показатели компании" class="my-8 sm:my-10 lg:my-15">
     <div
-      class="grid grid-cols-1 gap-8 rounded-[20px] bg-white px-6 py-4 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 sm:px-6 sm:py-10 lg:flex lg:items-center lg:justify-between lg:gap-11 lg:rounded-[20px] lg:px-8 lg:py-5.5 xl:px-10"
+      class="grid grid-cols-1 gap-6 rounded-[16px] bg-white px-5 py-5 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 sm:rounded-[20px] sm:px-6 sm:py-8 lg:flex lg:items-center lg:justify-between lg:gap-11 lg:px-8 lg:py-5.5 xl:px-10"
     >
       <div
         v-for="(item, index) in stats"
         :key="index"
-        class="stats__item flex min-w-0 items-center gap-4 sm:gap-3.5  xl:max-w-none" :class="`stats__item--${item.index}`"
+        class="stats__item flex min-w-0 items-center gap-3 sm:gap-3.5 xl:max-w-none"
+        :class="`stats__item--${item.index}`"
       >
         <p
-          class="shrink-0 text-[40px] leading-none font-regular tracking-tight text-[#222222] sm:text-[44px] lg:text-[56px]"
+          class="shrink-0 text-[32px] leading-none tracking-tight text-[#222222] sm:text-[44px] lg:text-[56px]"
         >
           {{ item.value }}
         </p>
         <p
-          class="stats__item-text max-w-[245px] text-xs leading-snug text-[#222222] sm:text-[14px]"
+          class="stats__item-text max-w-[220px] text-[12px] leading-snug text-[#222222] sm:max-w-[245px] sm:text-[14px]"
         >
           {{ item.text }}
         </p>

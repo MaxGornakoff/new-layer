@@ -75,7 +75,9 @@ npm run build
 | GET | `/api/categories` | Категории (ABS, PLA, …) |
 | GET | `/api/hero-slides` | Слайды главной (+ `meta`: автопрокрутка, интервал) |
 | GET | `/api/site-settings` | Логотип, фавикон, настройки каталога и слайдера |
-| GET | `/api/products?search=&category=&color=` | Каталог с фильтрами |
+| GET | `/api/products?search=&category=&color=&diameter=&weight=&in_stock=` | Каталог (мультифильтры) |
+| GET | `/api/products/filters` | Опции фильтров каталога (группы: цвет, диаметр, вес) |
+| GET | `/api/products/{slug}` | Карточка товара |
 | POST | `/api/register`, `/api/login` | Авторизация |
 | POST | `/api/orders` | Оформление заказа (auth) |
 | GET | `/api/orders` | Список заказов клиента с позициями (auth) |

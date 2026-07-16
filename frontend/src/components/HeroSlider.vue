@@ -154,21 +154,21 @@ onUnmounted(() => {
 <template>
   <section
     v-if="loading || hasSlides"
-    class="hero-slider h-full"
+    class="hero-slider"
   >
     <AppLoader v-if="loading" label="Загрузка слайдера..." />
 
     <template v-else-if="hasSlides">
       <div
         ref="viewportRef"
-        class="hero-slider__viewport h-full"
+        class="hero-slider__viewport"
         :class="{ 'hero-slider__viewport--dragging': isDragging }"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
         @pointercancel="onPointerCancel"
       >
-        <div class="hero-slider__track h-full" :style="trackStyle">
+        <div class="hero-slider__track" :style="trackStyle">
           <article
             v-for="slide in slides"
             :key="slide.id"
@@ -184,18 +184,18 @@ onUnmounted(() => {
 
             <div class="hero-slider__overlay" />
 
-            <div class="hero-slider__content box pl-15">
+            <div class="hero-slider__content">
               <div class="hero-slider__title uppercase font-semibold" v-html="slide.title" />
               <div
                 v-if="slide.subtitle"
-                class="hero-slider__subtitle uppercase mt-9"
+                class="hero-slider__subtitle uppercase"
                 v-html="slide.subtitle"
               />
 
               <component
                 :is="isExternalUrl(slide.button_url) ? 'a' : RouterLink"
                 v-if="slide.button_url"
-                class="hero-slider__button btn h-12.5 mt-8 rounded-full"
+                class="hero-slider__button btn"
                 :href="isExternalUrl(slide.button_url) ? slide.button_url : undefined"
                 :to="isExternalUrl(slide.button_url) ? undefined : slide.button_url"
                 :target="isExternalUrl(slide.button_url) ? '_blank' : undefined"
@@ -226,7 +226,8 @@ onUnmounted(() => {
           @click="goTo(index); startAutoplay()"
         />
       </div>
-      <HeroDigits class="home__hero-digits" />
+
+      <HeroDigits />
     </template>
   </section>
 </template>
@@ -235,14 +236,23 @@ onUnmounted(() => {
 .hero-slider {
   position: relative;
   width: 100%;
-  margin-bottom: 1.5rem;
+  height: 100%;
+  min-height: inherit;
 }
 
 .hero-slider__viewport {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 16px;
   cursor: grab;
   touch-action: pan-y;
+}
+
+@media (min-width: 768px) {
+  .hero-slider__viewport {
+    border-radius: 20px;
+  }
 }
 
 .hero-slider__viewport--dragging {
@@ -253,12 +263,15 @@ onUnmounted(() => {
 
 .hero-slider__track {
   display: flex;
+  height: 100%;
+  will-change: transform;
 }
 
 .hero-slider__slide {
   position: relative;
   flex: 0 0 100%;
-  min-height: clamp(220px, 42vw, 520px);
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -268,6 +281,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   pointer-events: none;
   user-select: none;
 }
@@ -275,8 +289,24 @@ onUnmounted(() => {
 .hero-slider__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.15) 55%, transparent 100%);
   pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.25) 0%,
+    rgba(15, 23, 42, 0.55) 55%,
+    rgba(15, 23, 42, 0.62) 100%
+  );
+}
+
+@media (min-width: 768px) {
+  .hero-slider__overlay {
+    background: linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.55) 0%,
+      rgba(15, 23, 42, 0.2) 55%,
+      transparent 100%
+    );
+  }
 }
 
 .hero-slider__content {
@@ -284,35 +314,109 @@ onUnmounted(() => {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: flex-start;
   gap: 0.75rem;
-  min-height: clamp(220px, 42vw, 520px);
-  padding-top: 2rem;
-  padding-bottom: 3rem;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 1.25rem 1.25rem 1.5rem;
   color: #fff;
+}
+
+@media (min-width: 640px) {
+  .hero-slider__content {
+    gap: 0.85rem;
+    padding: 1.75rem 2rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-slider__content {
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 3.75rem 3rem 3.75rem;
+  }
 }
 
 .hero-slider__title {
   margin: 0;
-  max-width: 16ch;
-  font-size: 98px;
-  line-height: 1.15;
-
+  max-width: 14ch;
+  font-size: clamp(1.75rem, 6.5vw, 3.25rem);
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
-.hero-slider__title :deep(h2) {
-  font-size: 98px;
+.hero-slider__title :deep(*) {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
 }
 
 .hero-slider__title :deep(p) {
-  font-size: 30px;
+  margin-top: 0.35em;
+  font-size: clamp(0.875rem, 2.2vw, 1.25rem);
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+@media (min-width: 768px) {
+  .hero-slider__title {
+    max-width: 15ch;
+    font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+  }
+
+  .hero-slider__title :deep(p) {
+    font-size: clamp(1.05rem, 2vw, 1.5rem);
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-slider__title {
+    max-width: 16ch;
+    font-size: 6.125rem;
+  }
+
+  .hero-slider__title :deep(p) {
+    font-size: 1.875rem;
+  }
 }
 
 .hero-slider__subtitle {
-  max-width: 51ch;
-  font-size: clamp(0.95rem, 2vw, 1.125rem);
-  line-height: 1.3;
+  max-width: 36ch;
+  font-size: clamp(0.8125rem, 1.8vw, 1.125rem);
+  line-height: 1.35;
+}
+
+@media (min-width: 1024px) {
+  .hero-slider__subtitle {
+    max-width: 51ch;
+    margin-top: 0.5rem;
+  }
+}
+
+.hero-slider__button {
+  height: 2.75rem;
+  margin-top: 0.25rem;
+  border-radius: 999px;
+  padding-inline: 1.25rem;
+  font-size: 0.9375rem;
+}
+
+@media (min-width: 640px) {
+  .hero-slider__button {
+    height: 3.125rem;
+    margin-top: 0.5rem;
+    padding-inline: 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-slider__button {
+    margin-top: 1rem;
+  }
 }
 
 .hero-slider__button-icon {
@@ -323,15 +427,26 @@ onUnmounted(() => {
 
 .hero-slider__pagination {
   position: absolute;
-  left: auto;
-  right: 50px;
-  bottom: auto;
+  top: 0.875rem;
+  right: 0.875rem;
   z-index: 2;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transform: translateX(-50%);
-  top: 44px;
+}
+
+@media (min-width: 640px) {
+  .hero-slider__pagination {
+    top: 1.25rem;
+    right: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-slider__pagination {
+    top: 2.75rem;
+    right: 3.125rem;
+  }
 }
 
 .hero-slider__dot {
@@ -353,16 +468,5 @@ onUnmounted(() => {
   width: 10px;
   height: 10px;
   opacity: 1;
-}
-
-@media (max-width: 768px) {
-  .hero-slider__viewport {
-    border-radius: 16px;
-  }
-
-  .hero-slider__content {
-    padding-top: 1.5rem;
-    padding-bottom: 2.5rem;
-  }
 }
 </style>
