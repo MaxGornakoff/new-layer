@@ -10,6 +10,79 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function filters(): JsonResponse
+    {
+        $base = Product::query()->where('is_active', true);
+
+        $colors = (clone $base)
+            ->whereNotNull('color')
+            ->where('color', '!=', '')
+            ->distinct()
+            ->orderBy('color')
+            ->pluck('color')
+            ->values()
+            ->all();
+
+        $diameters = (clone $base)
+            ->whereNotNull('diameter')
+            ->distinct()
+            ->orderBy('diameter')
+            ->pluck('diameter')
+            ->map(fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') ?: '0')
+            ->values()
+            ->all();
+
+        $weights = (clone $base)
+            ->whereNotNull('weight_grams')
+            ->distinct()
+            ->orderBy('weight_grams')
+            ->pluck('weight_grams')
+            ->map(fn ($value) => (int) $value)
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data' => [
+                'groups' => array_values(array_filter([
+                    [
+                        'key' => 'color',
+                        'title' => 'Цвет',
+                        'options' => array_map(
+                            static fn (string $color) => ['value' => $color, 'label' => $color],
+                            $colors,
+                        ),
+                    ],
+                    [
+                        'key' => 'diameter',
+                        'title' => 'Диаметр',
+                        'options' => array_map(
+                            static fn (string $diameter) => [
+                                'value' => $diameter,
+                                'label' => "{$diameter} мм",
+                            ],
+                            $diameters,
+                        ),
+                    ],
+                    [
+                        'key' => 'weight',
+                        'title' => 'Вес катушки',
+                        'options' => array_map(
+                            static fn (int $weight) => [
+                                'value' => (string) $weight,
+                                'label' => "{$weight} г",
+                            ],
+                            $weights,
+                        ),
+                    ],
+                ], static fn (array $group) => $group['options'] !== [])),
+                // backward-compatible flat lists
+                'colors' => $colors,
+                'diameters' => $diameters,
+                'weights' => $weights,
+            ],
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Product::query()
@@ -25,18 +98,26 @@ class ProductController extends Controller
             });
         }
 
-        if ($category = $request->string('category')->trim()->toString()) {
-            $query->join('categories', 'products.category_id', '=', 'categories.id')
-                ->where('categories.slug', $category)
-                ->select('products.*');
+        $categories = $this->requestList($request, 'category');
+        if ($categories !== []) {
+            $query->whereHas('category', function ($builder) use ($categories) {
+                $builder->whereIn('slug', $categories);
+            });
         }
 
-        if ($color = $request->string('color')->trim()->toString()) {
-            $query->where('color', $color);
+        $colors = $this->requestList($request, 'color');
+        if ($colors !== []) {
+            $query->whereIn('color', $colors);
         }
 
-        if ($request->filled('diameter')) {
-            $query->where('diameter', $request->input('diameter'));
+        $diameters = $this->requestList($request, 'diameter');
+        if ($diameters !== []) {
+            $query->whereIn('diameter', $diameters);
+        }
+
+        $weights = $this->requestList($request, 'weight');
+        if ($weights !== []) {
+            $query->whereIn('weight_grams', array_map('intval', $weights));
         }
 
         if ($request->boolean('in_stock')) {
@@ -66,5 +147,26 @@ class ProductController extends Controller
         $product->load('category:id,name,slug');
 
         return (new ProductResource($product))->response();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function requestList(Request $request, string $key): array
+    {
+        $value = $request->input($key);
+
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        if (! is_array($value)) {
+            $value = explode(',', (string) $value);
+        }
+
+        return array_values(array_filter(array_map(
+            static fn ($item) => trim((string) $item),
+            $value,
+        ), static fn ($item) => $item !== ''));
     }
 }

@@ -29,6 +29,7 @@ Route::get('/site-settings', [SiteSettingController::class, 'show']);
 Route::get('/hero-slides', [HeroSlideController::class, 'index']);
 Route::get('/menu', [MenuController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
+Route::get('/products/filters', [ProductController::class, 'filters']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product:slug}', [ProductController::class, 'show']);
 Route::post('/delivery/calculate', [DeliveryController::class, 'calculate']);

@@ -73,10 +73,10 @@ const currentPrice = computed(() => Number(props.product.price))
 }
 
 .product-price--lg .product-price__current {
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .product-price--lg .product-price__compare {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 </style>

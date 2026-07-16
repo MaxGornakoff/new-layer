@@ -9,7 +9,7 @@ import AppLoader from '@/components/AppLoader.vue'
 
 const categories = ref([])
 const products = ref([])
-const colors = ref([])
+const filterGroups = ref([])
 const loading = ref(true)
 const route = useRoute()
 const router = useRouter()
@@ -17,15 +17,28 @@ const site = useSiteStore()
 
 const filters = ref({
   search: '',
-  category: '',
-  color: '',
-  diameter: '',
+  category: [],
+  color: [],
+  diameter: [],
+  weight: [],
   in_stock: false,
 })
 
+function toArray(value) {
+  if (value == null || value === '') return []
+  if (Array.isArray(value)) {
+    return value.map(String).map((item) => item.trim()).filter(Boolean)
+  }
+
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
 const pageTitle = computed(() => {
-  if (filters.value.category) {
-    const category = categories.value.find((item) => item.slug === filters.value.category)
+  if (filters.value.category.length === 1) {
+    const category = categories.value.find((item) => item.slug === filters.value.category[0])
     return category ? `Каталог: ${category.name}` : 'Каталог'
   }
 
@@ -36,27 +49,46 @@ const activeFilters = computed(() => {
   const items = []
 
   if (filters.value.search) {
-    items.push({ key: 'search', label: `Поиск: ${filters.value.search}` })
+    items.push({ key: 'search', value: null, label: `Поиск: ${filters.value.search}` })
   }
 
-  if (filters.value.category) {
-    const category = categories.value.find((item) => item.slug === filters.value.category)
+  for (const slug of filters.value.category) {
+    const category = categories.value.find((item) => item.slug === slug)
     items.push({
       key: 'category',
-      label: category?.name || filters.value.category,
+      value: slug,
+      label: category?.name || slug,
     })
   }
 
-  if (filters.value.color) {
-    items.push({ key: 'color', label: `Цвет: ${filters.value.color}` })
+  const optionLabel = (groupKey, value) => {
+    const group = filterGroups.value.find((item) => item.key === groupKey)
+    const option = group?.options?.find((item) => String(item.value) === String(value))
+    return option?.label || value
   }
 
-  if (filters.value.diameter) {
-    items.push({ key: 'diameter', label: `Диаметр: ${filters.value.diameter} мм` })
+  for (const color of filters.value.color) {
+    items.push({ key: 'color', value: color, label: `Цвет: ${optionLabel('color', color)}` })
+  }
+
+  for (const diameter of filters.value.diameter) {
+    items.push({
+      key: 'diameter',
+      value: diameter,
+      label: `Диаметр: ${optionLabel('diameter', diameter)}`,
+    })
+  }
+
+  for (const weight of filters.value.weight) {
+    items.push({
+      key: 'weight',
+      value: weight,
+      label: `Вес: ${optionLabel('weight', weight)}`,
+    })
   }
 
   if (filters.value.in_stock) {
-    items.push({ key: 'in_stock', label: 'Только в наличии' })
+    items.push({ key: 'in_stock', value: null, label: 'Только в наличии' })
   }
 
   return items
@@ -66,9 +98,10 @@ function buildQuery(nextFilters) {
   const query = {}
 
   if (nextFilters.search) query.search = nextFilters.search
-  if (nextFilters.category) query.category = nextFilters.category
-  if (nextFilters.color) query.color = nextFilters.color
-  if (nextFilters.diameter) query.diameter = nextFilters.diameter
+  if (nextFilters.category.length) query.category = nextFilters.category
+  if (nextFilters.color.length) query.color = nextFilters.color
+  if (nextFilters.diameter.length) query.diameter = nextFilters.diameter
+  if (nextFilters.weight.length) query.weight = nextFilters.weight
   if (nextFilters.in_stock) query.in_stock = '1'
 
   return query
@@ -77,9 +110,10 @@ function buildQuery(nextFilters) {
 function syncFiltersFromRoute() {
   filters.value = {
     search: route.query.search ? String(route.query.search) : '',
-    category: route.query.category ? String(route.query.category) : '',
-    color: route.query.color ? String(route.query.color) : '',
-    diameter: route.query.diameter ? String(route.query.diameter) : '',
+    category: toArray(route.query.category),
+    color: toArray(route.query.color),
+    diameter: toArray(route.query.diameter),
+    weight: toArray(route.query.weight),
     in_stock: route.query.in_stock === '1' || route.query.in_stock === 'true',
   }
 }
@@ -89,21 +123,24 @@ async function loadCategories() {
   categories.value = data.data
 }
 
+async function loadFilterOptions() {
+  const { data } = await api.get('/products/filters')
+  filterGroups.value = data.data.groups ?? []
+}
+
 async function loadProducts() {
   loading.value = true
   try {
     const params = {
       search: filters.value.search || undefined,
-      category: filters.value.category || undefined,
-      color: filters.value.color || undefined,
-      diameter: filters.value.diameter || undefined,
+      category: filters.value.category.length ? filters.value.category : undefined,
+      color: filters.value.color.length ? filters.value.color : undefined,
+      diameter: filters.value.diameter.length ? filters.value.diameter : undefined,
+      weight: filters.value.weight.length ? filters.value.weight : undefined,
       in_stock: filters.value.in_stock || undefined,
     }
     const { data } = await api.get('/products', { params })
     products.value = data.data
-
-    const uniqueColors = [...new Set(products.value.map((item) => item.color))]
-    colors.value = uniqueColors.sort()
   } finally {
     loading.value = false
   }
@@ -117,10 +154,21 @@ function resetFilters() {
   router.push({ name: 'catalog' })
 }
 
-function removeFilter(key) {
+function removeFilter(filter) {
   const nextFilters = {
     ...filters.value,
-    [key]: key === 'in_stock' ? false : '',
+    category: [...filters.value.category],
+    color: [...filters.value.color],
+    diameter: [...filters.value.diameter],
+    weight: [...filters.value.weight],
+  }
+
+  if (filter.key === 'search') {
+    nextFilters.search = ''
+  } else if (filter.key === 'in_stock') {
+    nextFilters.in_stock = false
+  } else if (filter.value != null) {
+    nextFilters[filter.key] = nextFilters[filter.key].filter((item) => item !== filter.value)
   }
 
   router.replace({ name: 'catalog', query: buildQuery(nextFilters) })
@@ -136,7 +184,7 @@ watch(
 
 onMounted(async () => {
   syncFiltersFromRoute()
-  await Promise.all([loadCategories(), loadProducts()])
+  await Promise.all([loadCategories(), loadFilterOptions(), loadProducts()])
 })
 </script>
 
@@ -144,16 +192,23 @@ onMounted(async () => {
   <section class="catalog">
     <div class="title-container inline-flex flex-col gap-2.5 my-10">
       <h1 class="text-3xl font-semibold uppercase">{{ pageTitle }}</h1>
-      <p class="muted px-3 py-1.5 rounded-full bg-[#222222] text-white text-sm">Заказ оформляется кратно 10 катушкам — в любом составе категорий.</p>
+      <p class="muted text-[#222222] text-[18px] flex items-center gap-2.5 font-medium">
+        <span class="rounded-full text-sm font-semibold border-[1.5px] border-[#222222] p-2 size-5 min-w-5 inline-flex items-center justify-center">i</span>
+        Заказ оформляется кратно 10 катушкам — в любом составе категорий.
+      </p>
     </div>
     <div v-if="activeFilters.length" class="active-filters">
-      <span v-for="filter in activeFilters" :key="filter.key" class="active-filters__chip">
+      <span
+        v-for="filter in activeFilters"
+        :key="`${filter.key}:${filter.value ?? ''}`"
+        class="active-filters__chip"
+      >
         {{ filter.label }}
         <button
           type="button"
           class="active-filters__remove"
           :aria-label="`Убрать фильтр ${filter.label}`"
-          @click="removeFilter(filter.key)"
+          @click="removeFilter(filter)"
         >
           ×
         </button>
@@ -167,7 +222,7 @@ onMounted(async () => {
       <ProductFilters
         v-model="filters"
         :categories="categories"
-        :colors="colors"
+        :groups="filterGroups"
         :auto-apply="site.catalogAutoApplyFilters"
         @apply="applyFilters"
         @reset="resetFilters"

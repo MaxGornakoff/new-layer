@@ -7,7 +7,19 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  resetOnLeave: {
+    type: Boolean,
+    default: true,
+  },
+  /** `dots` — точки снизу (карточки); `thumbs` — миниатюры слева (страница товара) */
+  variant: {
+    type: String,
+    default: 'dots',
+    validator: (value) => ['dots', 'thumbs'].includes(value),
+  },
 })
+
+const isThumbs = computed(() => props.variant === 'thumbs')
 
 const normalizedImages = computed(() => {
   return (props.images ?? [])
@@ -79,7 +91,7 @@ function setIndexFromPointerX(clientX) {
 }
 
 function onMouseMove(event) {
-  if (!hasMultipleImages.value) return
+  if (isThumbs.value || !hasMultipleImages.value) return
   setIndexFromPointerX(event.clientX)
 }
 
@@ -136,6 +148,11 @@ function onPointerCancel(event) {
   event.stopPropagation()
 }
 
+function onMouseLeave() {
+  if (!props.resetOnLeave || !hasMultipleImages.value) return
+  activeIndex.value = 0
+}
+
 function onAreaClick(event) {
   if (didSwipe.value) {
     event.stopPropagation()
@@ -153,7 +170,7 @@ function imageTransform(index) {
 </script>
 
 <template>
-  <div>
+  <div :class="isThumbs ? 'product-slider product-slider--thumbs' : 'product-slider'">
     <div
       v-if="singleImage && !hasMultipleImages"
       class="overflow-hidden rounded-xl"
@@ -168,9 +185,83 @@ function imageTransform(index) {
     </div>
 
     <div
-      v-else-if="hasMultipleImages"
-      class="relative overflow-hidden rounded-xl "
+      v-else-if="hasMultipleImages && isThumbs"
+      class="flex gap-3 sm:gap-4"
       @click.capture="onAreaClick"
+    >
+      <div
+        class="!pt-12 product-slider__thumbs flex shrink-0 flex-row gap-2 overflow-x-auto sm:max-h-[min(100%,520px)] sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto"
+        role="tablist"
+        aria-label="Миниатюры фото"
+      >
+        <button
+          v-for="(img, i) in normalizedImages"
+          :key="img.url + i"
+          type="button"
+          role="tab"
+          class="cursor-pointer product-slider__thumb relative size-14 shrink-0 overflow-hidden rounded-[12px] border-2 border-solid bg-[#F2F7F8] p-0 transition-[border-color] sm:size-16"
+          :class="i === activeIndex ? 'is-active' : 'is-idle'"
+          :aria-selected="i === activeIndex"
+          :aria-label="`Фото ${i + 1}`"
+          @click.stop="setIndex(i)"
+        >
+          <img
+            :src="img.url"
+            alt=""
+            class="pointer-events-none absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 object-contain"
+          />
+        </button>
+      </div>
+
+      <div class="relative min-w-0 flex-1 overflow-hidden rounded-xl">
+        <div
+          ref="viewportRef"
+          class="relative aspect-[4/3] touch-pan-y sm:aspect-[1/1]"
+          :class="isDragging ? 'touch-none select-none' : ''"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerCancel"
+        >
+          <img
+            v-for="(img, i) in normalizedImages"
+            :key="img.url + i"
+            :src="img.url"
+            :alt="`Фото товара ${i + 1}`"
+            class="pointer-events-none absolute left-1/2 top-1/2 h-[85%] w-[85%] object-contain select-none"
+            :class="[
+              i === activeIndex ? 'opacity-100' : 'opacity-0',
+              isDragging ? '' : 'transition-opacity duration-200',
+            ]"
+            :style="{ transform: imageTransform(i) }"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/90 text-slate-900 shadow-md sm:hidden"
+          aria-label="Предыдущее фото"
+          @click.stop="prev($event)"
+        >
+          <AppIcon name="chevron-left" :size="14" />
+        </button>
+
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/90 text-slate-900 shadow-md sm:hidden"
+          aria-label="Следующее фото"
+          @click.stop="next($event)"
+        >
+          <AppIcon name="chevron-right" :size="14" />
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-else-if="hasMultipleImages"
+      class="relative overflow-hidden rounded-xl"
+      @click.capture="onAreaClick"
+      @mouseleave="onMouseLeave"
     >
       <div
         ref="viewportRef"
@@ -237,3 +328,40 @@ function imageTransform(index) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.product-slider__thumbs {
+  scrollbar-width: thin;
+  /* чтобы рамка миниатюр не обрезалась overflow */
+  padding: 2px;
+}
+
+.product-slider__thumbs::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.product-slider__thumbs::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.product-slider__thumb.is-idle {
+  border-color: transparent;
+}
+
+.product-slider__thumb.is-idle:hover {
+  border-color: #cbd5e1;
+}
+
+.product-slider__thumb.is-active {
+  border-color: #3b72ff;
+}
+
+/* На мобиле миниатюры сверху горизонтально — удобнее, чем узкая колонка */
+@media (max-width: 639px) {
+  .product-slider--thumbs > .flex {
+    flex-direction: column-reverse;
+  }
+}
+</style>
