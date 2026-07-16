@@ -77,8 +77,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <form class="card filters" @submit.prevent="apply">
-    <h3>Фильтры</h3>
+  <form class="rounded-[20px] bg-white border-0 p-7 card filters" @submit.prevent="apply">
 
     <label class="field">
       <span>Поиск</span>

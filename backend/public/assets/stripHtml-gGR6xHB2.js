@@ -1,0 +1,1 @@
+function e(e){return e?String(e).replace(/<[^>]*>/g,``).trim():``}export{e as t};

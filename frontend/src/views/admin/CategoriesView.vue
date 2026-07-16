@@ -145,14 +145,22 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
-    <h1>Категории</h1>
-    <p class="muted">
-      Название, изображение, настройки блока на главной и 3 преимущества (иконка SVG/PNG + текст).
-    </p>
+  <section class="admin-page">
+    <header class="admin-page__header">
+      <h1>Категории</h1>
+      <p class="admin-page__lead">
+        Название, изображение, настройки блока на главной и 3 преимущества (иконка SVG/PNG + текст).
+      </p>
+    </header>
 
-    <form class="card form" @submit.prevent="save">
-      <h3>{{ editingId ? 'Редактировать категорию' : 'Добавить категорию' }}</h3>
+    <form class="card admin-form" @submit.prevent="save">
+      <header class="admin-form__header">
+        <h3>{{ editingId ? 'Редактировать категорию' : 'Добавить категорию' }}</h3>
+        <p v-if="editingId" class="admin-field-hint">ID {{ editingId }}</p>
+      </header>
+
+      <fieldset class="admin-form__section">
+        <legend class="admin-form__section-title">Основное</legend>
 
       <label class="field">
         <span>Название</span>
@@ -162,8 +170,12 @@ onMounted(load)
       <label class="field">
         <span>Название на главной</span>
         <input v-model="form.home_title" placeholder="Второе название для блока категории" />
-        <span class="field-hint">Если пусто — на главной будет основное название.</span>
+        <span class="admin-field-hint">Если пусто — на главной будет основное название.</span>
       </label>
+      </fieldset>
+
+      <fieldset class="admin-form__section">
+        <legend class="admin-form__section-title">Оформление на главной</legend>
 
       <div class="color-fields">
         <label class="field">
@@ -195,14 +207,15 @@ onMounted(load)
           v-if="form.imagePreview || form.existingImageUrl"
           :src="form.imagePreview || form.existingImageUrl"
           alt=""
-          class="preview"
+          class="admin-preview preview"
         />
       </label>
+      </fieldset>
 
-      <fieldset class="advantages">
-        <legend>Преимущества (3 шт.)</legend>
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Преимущества (3 шт.)</legend>
 
-        <div v-for="(advantage, index) in form.advantages" :key="index" class="advantage">
+      <div v-for="(advantage, index) in form.advantages" :key="index" class="advantage">
           <h4>Преимущество {{ index + 1 }}</h4>
 
           <label class="field">
@@ -221,15 +234,15 @@ onMounted(load)
               v-if="advantage.iconPreview || advantage.existingIconUrl"
               :src="advantage.iconPreview || advantage.existingIconUrl"
               alt=""
-              class="preview preview--icon"
+              class="admin-preview preview preview--icon"
             />
           </label>
         </div>
       </fieldset>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="admin-error">{{ error }}</p>
 
-      <div class="actions">
+      <div class="admin-actions">
         <button class="btn" type="submit" :disabled="saving">
           {{ saving ? 'Сохранение...' : editingId ? 'Сохранить' : 'Добавить' }}
         </button>
@@ -239,11 +252,17 @@ onMounted(load)
       </div>
     </form>
 
-    <div class="card">
+    <div class="card admin-list-card admin-form--wide">
+      <header class="admin-form__header">
+        <h3>Список категорий</h3>
+        <p v-if="!loading && categories.length" class="admin-field-hint">{{ categories.length }} категорий</p>
+      </header>
+
       <AppLoader v-if="loading" />
 
       <template v-else>
-        <table v-if="categories.length" class="table">
+        <div v-if="categories.length" class="admin-table-wrap">
+        <table class="table">
         <thead>
           <tr>
             <th>Изображение</th>
@@ -288,6 +307,7 @@ onMounted(load)
           </tr>
         </tbody>
         </table>
+        </div>
 
         <p v-else class="muted">Категорий пока нет.</p>
       </template>
@@ -296,18 +316,6 @@ onMounted(load)
 </template>
 
 <style scoped>
-.form {
-  margin-bottom: 1rem;
-  max-width: 640px;
-}
-
-.advantages {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  margin: 0 0 1rem;
-}
-
 .advantage + .advantage {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -316,11 +324,11 @@ onMounted(load)
 
 .advantage h4 {
   margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .preview {
-  display: block;
-  margin-top: 0.5rem;
   max-width: 200px;
   max-height: 120px;
   object-fit: contain;
@@ -344,24 +352,9 @@ onMounted(load)
   flex-wrap: wrap;
 }
 
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.error {
-  color: #dc2626;
-}
-
-.field-hint {
-  font-size: 0.8125rem;
-  color: #64748b;
-}
-
 .color-fields {
   display: grid;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
 .color-input {

@@ -103,14 +103,21 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
-    <h1>Меню сайта</h1>
-    <p class="muted">
-      Разделы главного меню и их подпункты. Для каталога можно включить автоматический вывод категорий.
-    </p>
+  <section class="admin-page">
+    <header class="admin-page__header">
+      <h1>Меню сайта</h1>
+      <p class="admin-page__lead">
+        Разделы главного меню и их подпункты. Для каталога можно включить автоматический вывод категорий.
+      </p>
+    </header>
 
-    <form class="card form" @submit.prevent="createSection">
-      <h3>Добавить раздел меню</h3>
+    <form class="card admin-form" @submit.prevent="createSection">
+      <header class="admin-form__header">
+        <h3>Добавить раздел меню</h3>
+      </header>
+
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Параметры раздела</legend>
 
       <label class="field">
         <span>Ключ (латиница)</span>
@@ -140,26 +147,34 @@ onMounted(load)
         <input v-model.number="sectionForm.sort_order" type="number" min="0" />
       </label>
 
-      <label v-if="sectionForm.type === 'dropdown'" class="field checkbox">
+      <label v-if="sectionForm.type === 'dropdown'" class="field admin-checkbox">
         <input v-model="sectionForm.include_categories" type="checkbox" />
         <span>Добавлять категории каталога в подменю</span>
       </label>
 
-      <label class="field checkbox">
+      <label class="field admin-checkbox">
         <input v-model="sectionForm.open_in_new_tab" type="checkbox" />
         <span>Открывать в новой вкладке</span>
       </label>
 
-      <label class="field checkbox">
+      <label class="field admin-checkbox">
         <input v-model="sectionForm.is_active" type="checkbox" />
         <span>Активен</span>
       </label>
+      </fieldset>
 
-      <button class="btn" type="submit">Сохранить раздел</button>
+      <div class="admin-actions">
+        <button class="btn" type="submit">Сохранить раздел</button>
+      </div>
     </form>
 
-    <form class="card form" @submit.prevent="createItem">
-      <h3>Добавить подпункт</h3>
+    <form class="card admin-form" @submit.prevent="createItem">
+      <header class="admin-form__header">
+        <h3>Добавить подпункт</h3>
+      </header>
+
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Параметры подпункта</legend>
 
       <label class="field">
         <span>Раздел</span>
@@ -185,21 +200,28 @@ onMounted(load)
         <input v-model.number="itemForm.sort_order" type="number" min="0" />
       </label>
 
-      <label class="field checkbox">
+      <label class="field admin-checkbox">
         <input v-model="itemForm.open_in_new_tab" type="checkbox" />
         <span>Открывать в новой вкладке</span>
       </label>
+      </fieldset>
 
-      <button class="btn" type="submit">Сохранить подпункт</button>
+      <div class="admin-actions">
+        <button class="btn" type="submit">Сохранить подпункт</button>
+      </div>
     </form>
 
-    <div class="card menu-sections">
-      <h3>Текущее меню</h3>
+    <div class="card admin-list-card admin-form--wide">
+      <header class="admin-form__header">
+        <h3>Текущее меню</h3>
+        <p v-if="!loading && sections.length" class="admin-field-hint">{{ sections.length }} разделов</p>
+      </header>
 
       <AppLoader v-if="loading" />
 
       <template v-else>
-        <article v-for="section in sections" :key="section.id" class="menu-section">
+        <div v-if="sections.length" class="menu-sections">
+        <article v-for="section in sections" :key="section.id" class="menu-section admin-list-item">
         <header class="menu-section__header">
           <div>
             <strong>{{ section.title }}</strong>
@@ -224,6 +246,7 @@ onMounted(load)
 
         <p v-else class="muted menu-section__empty">Подпунктов нет</p>
       </article>
+        </div>
 
         <p v-if="!sections.length" class="muted">Разделов меню пока нет.</p>
       </template>
@@ -232,30 +255,9 @@ onMounted(load)
 </template>
 
 <style scoped>
-.form {
-  margin-bottom: 1rem;
-  max-width: 560px;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .menu-sections {
   display: grid;
-  gap: 1rem;
-}
-
-.menu-section {
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.menu-section:first-of-type {
-  padding-top: 0;
-  border-top: none;
+  gap: 0;
 }
 
 .menu-section__header {

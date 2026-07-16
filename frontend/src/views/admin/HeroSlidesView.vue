@@ -162,14 +162,21 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
-    <h1>Слайдер на главной</h1>
-    <p class="muted">Слайды отображаются под шапкой на главной странице.</p>
+  <section class="admin-page">
+    <header class="admin-page__header">
+      <h1>Слайдер на главной</h1>
+      <p class="admin-page__lead">Слайды отображаются под шапкой на главной странице.</p>
+    </header>
 
-    <form class="card form settings-form" @submit.prevent="saveSliderSettings">
-      <h3>Настройки слайдера</h3>
+    <form class="card admin-form" @submit.prevent="saveSliderSettings">
+      <header class="admin-form__header">
+        <h3>Настройки слайдера</h3>
+      </header>
 
-      <label class="field checkbox">
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Автопрокрутка</legend>
+
+      <label class="field admin-checkbox">
         <input v-model="sliderSettings.autoplay" type="checkbox" />
         <span>Автоматическое пролистывание</span>
       </label>
@@ -184,18 +191,24 @@ onMounted(load)
           :disabled="!sliderSettings.autoplay"
         />
       </label>
+      </fieldset>
 
-      <p v-if="settingsError" class="error">{{ settingsError }}</p>
+      <p v-if="settingsError" class="admin-error">{{ settingsError }}</p>
 
-      <div class="actions">
+      <div class="admin-actions">
         <button class="btn" type="submit" :disabled="savingSettings">
           {{ savingSettings ? 'Сохранение...' : 'Сохранить настройки' }}
         </button>
       </div>
     </form>
 
-    <form class="card form" @submit.prevent="save">
-      <h3>{{ editingId ? 'Редактировать слайд' : 'Добавить слайд' }}</h3>
+    <form class="card admin-form" @submit.prevent="save">
+      <header class="admin-form__header">
+        <h3>{{ editingId ? 'Редактировать слайд' : 'Добавить слайд' }}</h3>
+      </header>
+
+      <fieldset class="admin-form__section">
+        <legend class="admin-form__section-title">Медиа</legend>
 
       <label class="field">
         <span>Изображение</span>
@@ -204,20 +217,24 @@ onMounted(load)
           v-if="form.imagePreview || form.existingImageUrl"
           :src="form.imagePreview || form.existingImageUrl"
           alt=""
-          class="preview"
+          class="admin-preview preview"
         />
       </label>
+      </fieldset>
+
+      <fieldset class="admin-form__section">
+        <legend class="admin-form__section-title">Контент</legend>
 
       <label class="field">
         <span>Основной текст</span>
         <textarea v-model="form.title" rows="3" required />
-        <span class="field-hint">Поддерживается HTML: &lt;br&gt;, &lt;span&gt;, &lt;strong&gt; и др.</span>
+        <span class="admin-field-hint">Поддерживается HTML: &lt;br&gt;, &lt;span&gt;, &lt;strong&gt; и др.</span>
       </label>
 
       <label class="field">
         <span>Вспомогательный текст</span>
         <textarea v-model="form.subtitle" rows="3" />
-        <span class="field-hint">Поддерживается HTML.</span>
+        <span class="admin-field-hint">Поддерживается HTML.</span>
       </label>
 
       <label class="field">
@@ -229,20 +246,25 @@ onMounted(load)
         <span>Ссылка кнопки</span>
         <input v-model="form.button_url" placeholder="/catalog или https://..." />
       </label>
+      </fieldset>
+
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Публикация</legend>
 
       <label class="field">
         <span>Порядок</span>
         <input v-model.number="form.sort_order" type="number" min="0" />
       </label>
 
-      <label class="field checkbox">
+      <label class="field admin-checkbox">
         <input v-model="form.is_active" type="checkbox" />
         <span>Активен</span>
       </label>
+      </fieldset>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="admin-error">{{ error }}</p>
 
-      <div class="actions">
+      <div class="admin-actions">
         <button class="btn" type="submit" :disabled="saving">
           {{ saving ? 'Сохранение...' : editingId ? 'Обновить' : 'Добавить' }}
         </button>
@@ -252,13 +274,16 @@ onMounted(load)
       </div>
     </form>
 
-    <div class="card">
-      <h3>Текущие слайды</h3>
+    <div class="card admin-list-card admin-form--wide">
+      <header class="admin-form__header">
+        <h3>Текущие слайды</h3>
+        <p v-if="!loading && slides.length" class="admin-field-hint">{{ slides.length }} слайдов</p>
+      </header>
 
       <AppLoader v-if="loading" />
 
       <div v-else-if="slides.length" class="slides-list">
-        <article v-for="slide in slides" :key="slide.id" class="slide-item">
+        <article v-for="slide in slides" :key="slide.id" class="slide-item admin-list-item">
           <img
             :src="slide.image_url"
             :alt="stripHtml(slide.title)"
@@ -288,49 +313,16 @@ onMounted(load)
 </template>
 
 <style scoped>
-.form {
-  margin-bottom: 1rem;
-  max-width: 560px;
-}
-
-.settings-form {
-  margin-bottom: 1.5rem;
-}
-
 .preview {
-  display: block;
-  margin-top: 0.5rem;
   width: 100%;
   max-width: 360px;
   max-height: 180px;
   object-fit: cover;
-  border-radius: 0.75rem;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.field-hint {
-  font-size: 0.8125rem;
-  color: #64748b;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.error {
-  color: #dc2626;
 }
 
 .slides-list {
   display: grid;
-  gap: 1rem;
+  gap: 0;
 }
 
 .slide-item {
@@ -338,13 +330,6 @@ onMounted(load)
   grid-template-columns: 120px 1fr auto;
   gap: 1rem;
   align-items: start;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.slide-item:first-child {
-  padding-top: 0;
-  border-top: none;
 }
 
 .slide-item__thumb {

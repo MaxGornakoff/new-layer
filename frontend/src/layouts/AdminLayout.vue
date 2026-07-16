@@ -5,18 +5,19 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <div class="admin-layout">
     <aside class="sidebar card">
-      <h2>Админка</h2>
-      <nav>
-        <RouterLink to="/admin">Обзор</RouterLink>
-        <RouterLink to="/admin/products">Товары</RouterLink>
-        <RouterLink to="/admin/categories">Категории</RouterLink>
-        <RouterLink to="/admin/orders">Заказы</RouterLink>
-        <RouterLink to="/admin/clients">Контрагенты</RouterLink>
-        <RouterLink to="/admin/menu">Меню</RouterLink>
-        <RouterLink to="/admin/hero-slides">Слайдер</RouterLink>
-        <RouterLink to="/admin/site">Настройки сайта</RouterLink>
+      <h2 class="admin-sidebar__title">Админка</h2>
+      <nav class="admin-sidebar__nav">
+        <RouterLink class="admin-nav-link" to="/admin">Обзор</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/products">Товары</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/categories">Категории</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/orders">Заказы</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/clients">Контрагенты</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/menu">Меню</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/hero-slides">Слайдер</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/site">Настройки сайта</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/delivery">Доставка</RouterLink>
       </nav>
-      <RouterLink class="back" to="/">← На сайт</RouterLink>
+      <RouterLink class="admin-sidebar__back" to="/">← На сайт</RouterLink>
     </aside>
     <section class="content">
       <RouterView />
@@ -29,8 +30,9 @@ import { RouterLink, RouterView } from 'vue-router'
   width: min(1200px, calc(100% - 2rem));
   margin: 1rem auto 2rem;
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 240px 1fr;
   gap: 1rem;
+  align-items: start;
 }
 
 .sidebar {
@@ -42,23 +44,32 @@ import { RouterLink, RouterView } from 'vue-router'
   height: fit-content;
 }
 
-.sidebar nav {
+.admin-sidebar__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-sidebar__nav {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.sidebar a.router-link-active {
-  color: #2563eb;
-  font-weight: 600;
-}
-
-.back {
+.admin-sidebar__back {
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
   color: #64748b;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 800px) {
   .admin-layout {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
   }
 }
 </style>

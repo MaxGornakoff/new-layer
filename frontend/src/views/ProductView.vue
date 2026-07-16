@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
 import CartProductQuantityControl from '@/components/CartProductQuantityControl.vue'
+import ProductImagesSlider from '@/components/ProductImagesSlider.vue'
+import ProductPrice from '@/components/ProductPrice.vue'
 
 const route = useRoute()
 const product = ref(null)
@@ -35,6 +37,9 @@ onMounted(loadProduct)
 
   <section v-else-if="product" class="card product-page">
     <span class="badge">{{ product.category?.name }}</span>
+
+    <ProductImagesSlider :images="product.images" />
+
     <h1>{{ product.name }}</h1>
     <p class="muted">Артикул: {{ product.sku }}</p>
     <p>{{ product.description }}</p>
@@ -46,7 +51,7 @@ onMounted(loadProduct)
       <li>В наличии: {{ product.stock_quantity }}</li>
     </ul>
 
-    <p class="price">{{ Number(product.price).toLocaleString('ru-RU') }} ₽</p>
+    <ProductPrice :product="product" size="lg" />
 
     <CartProductQuantityControl :product="product" />
   </section>
@@ -63,10 +68,5 @@ onMounted(loadProduct)
 .meta {
   margin: 0;
   padding-left: 1.1rem;
-}
-
-.price {
-  font-size: 1.5rem;
-  font-weight: 700;
 }
 </style>

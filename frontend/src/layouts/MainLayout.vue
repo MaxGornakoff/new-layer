@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const route = useRoute()
 const isFullWidth = computed(() => Boolean(route.meta.fullWidth))
@@ -19,15 +20,19 @@ const isFullWidth = computed(() => Boolean(route.meta.fullWidth))
         <RouterView />
       </div>
     </main>
+
+    <AppFooter />
   </div>
 </template>
 
 <style scoped>
 .layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .main {
-  padding-bottom: 2rem;
+  flex: 1;
 }
 </style>

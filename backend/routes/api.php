@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\DeliverySettingController as AdminDeliverySettingController;
 use App\Http\Controllers\Api\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\Admin\HeroSlideController as AdminHeroSlideController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\Admin\StockController as AdminStockController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\HeroSlideController;
@@ -29,6 +31,10 @@ Route::get('/menu', [MenuController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product:slug}', [ProductController::class, 'show']);
+Route::post('/delivery/calculate', [DeliveryController::class, 'calculate']);
+Route::get('/delivery/providers', [DeliveryController::class, 'providers']);
+Route::get('/delivery/cities', [DeliveryController::class, 'cities']);
+Route::get('/delivery/pickup-points', [DeliveryController::class, 'pickupPoints']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -49,7 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::match(['put', 'post'], 'categories/{category}', [AdminCategoryController::class, 'update']);
         Route::delete('categories/{category}', [AdminCategoryController::class, 'destroy']);
 
-        Route::apiResource('products', AdminProductController::class);
+        Route::apiResource('products', AdminProductController::class)->except(['update']);
+        Route::match(['put', 'post'], 'products/{product}', [AdminProductController::class, 'update']);
         Route::post('products/{product}/stock', [AdminStockController::class, 'store']);
 
         Route::get('orders', [AdminOrderController::class, 'index']);
@@ -75,5 +82,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('site-settings', [AdminSiteSettingController::class, 'show']);
         Route::post('site-settings', [AdminSiteSettingController::class, 'update']);
+
+        Route::get('delivery-settings', [AdminDeliverySettingController::class, 'show']);
+        Route::post('delivery-settings', [AdminDeliverySettingController::class, 'update']);
+        Route::post('delivery-settings/test/baikal', [AdminDeliverySettingController::class, 'testBaikal']);
+        Route::post('delivery-settings/test/dellin', [AdminDeliverySettingController::class, 'testDellin']);
+        Route::post('delivery-settings/test/yandex', [AdminDeliverySettingController::class, 'testYandex']);
+        Route::post('delivery-settings/test/zheldor', [AdminDeliverySettingController::class, 'testZheldor']);
     });
 });

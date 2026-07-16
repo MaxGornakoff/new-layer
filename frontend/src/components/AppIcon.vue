@@ -14,8 +14,7 @@ defineProps({
 <template>
   <svg
     class="app-icon"
-    :width="size"
-    :height="size"
+    :style="{ '--app-icon-size': `${size}px` }"
     aria-hidden="true"
     focusable="false"
   >
@@ -27,5 +26,8 @@ defineProps({
 .app-icon {
   display: block;
   fill: currentColor;
+  width: var(--app-icon-size, 1.5rem);
+  height: var(--app-icon-size, 1.5rem);
+  flex-shrink: 0;
 }
 </style>

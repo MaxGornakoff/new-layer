@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,7 +54,7 @@ class ProductController extends Controller
 
         $products = $query->paginate($request->integer('per_page', 12));
 
-        return response()->json($products);
+        return ProductResource::collection($products)->response();
     }
 
     public function show(Product $product): JsonResponse
@@ -64,6 +65,6 @@ class ProductController extends Controller
 
         $product->load('category:id,name,slug');
 
-        return response()->json(['data' => $product]);
+        return (new ProductResource($product))->response();
     }
 }

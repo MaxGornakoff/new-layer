@@ -34,6 +34,7 @@ const router = createRouter({
         { path: 'menu', name: 'admin-menu', component: () => import('@/views/admin/MenuItemsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'hero-slides', name: 'admin-hero-slides', component: () => import('@/views/admin/HeroSlidesView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'site', name: 'admin-site', component: () => import('@/views/admin/SiteSettingsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+        { path: 'delivery', name: 'admin-delivery', component: () => import('@/views/admin/DeliverySettingsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       ],
     },
   ],

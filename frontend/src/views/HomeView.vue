@@ -2,6 +2,10 @@
 import { RouterLink, useRoute } from 'vue-router'
 import HeroSlider from '@/components/HeroSlider.vue'
 import HomeCategories from '@/components/HomeCategories.vue'
+import HomeStats from '@/components/HomeStats.vue'
+import HomeProductShelves from '@/components/HomeProductShelves.vue'
+import HomeAbout from '@/components/HomeAbout.vue'
+import HomeAboutFeatures from '@/components/HomeAboutFeatures.vue'
 
 const route = useRoute()
 </script>
@@ -19,6 +23,10 @@ const route = useRoute()
       </p>
 
       <HomeCategories />
+      <HomeStats />
+      <HomeProductShelves />
+      <HomeAbout />
+      <HomeAboutFeatures />
     </div>
   </div>
 </template>
@@ -46,10 +54,5 @@ const route = useRoute()
   align-self: end;
   z-index: 3;
   pointer-events: none;
-}
-
-
-.home-about {
-  min-height: 120px;
 }
 </style>

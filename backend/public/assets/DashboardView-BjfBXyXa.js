@@ -1,0 +1,1 @@
+import{T as e,s as t,u as n}from"./runtime-core.esm-bundler-Bjzc5yQf.js";import{a as r}from"./index-tDOkRVCA.js";var i={};function a(r,i){return e(),n(`section`,null,[...i[0]||=[t(`h1`,null,`Обзор`,-1),t(`p`,{class:`muted`},`Разделы админки: товары, категории, заказы и контрагенты (клиенты).`,-1)]])}var o=r(i,[[`render`,a]]);export{o as default};

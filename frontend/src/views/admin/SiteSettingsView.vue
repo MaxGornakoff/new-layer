@@ -82,92 +82,91 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
-    <h1>Настройки сайта</h1>
+  <section class="admin-page">
+    <header class="admin-page__header">
+      <h1>Настройки сайта</h1>
+      <p class="admin-page__lead">
+        Брендинг и поведение каталога на витрине.
+      </p>
+    </header>
 
-    <form class="card form" @submit.prevent="save">
-      <h3>Логотип и фавикон</h3>
-      <p class="muted">Форматы: SVG или PNG. После загрузки сразу отображаются на сайте.</p>
+    <form class="card admin-form" @submit.prevent="save">
+      <header class="admin-form__header">
+        <h3>Логотип и фавикон</h3>
+        <p class="admin-field-hint">Форматы: SVG или PNG. После загрузки сразу отображаются на сайте.</p>
+      </header>
 
-      <label class="field">
-        <span>Логотип сайта</span>
-        <input type="file" accept="image/png,image/svg+xml" @change="onLogoChange" />
-        <img
-          v-if="logoPreview || site.logoUrl"
-          :src="logoPreview || site.logoUrl"
-          alt="Логотип"
-          class="preview preview--logo"
-        />
-      </label>
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Файлы</legend>
 
-      <label class="field">
-        <span>Фавикон</span>
-        <input type="file" accept="image/png,image/svg+xml" @change="onFaviconChange" />
-        <img
-          v-if="faviconPreview || site.faviconUrl"
-          :src="faviconPreview || site.faviconUrl"
-          alt="Фавикон"
-          class="preview preview--favicon"
-        />
-      </label>
+        <label class="field">
+          <span>Логотип сайта</span>
+          <input type="file" accept="image/png,image/svg+xml" @change="onLogoChange" />
+          <img
+            v-if="logoPreview || site.logoUrl"
+            :src="logoPreview || site.logoUrl"
+            alt="Логотип"
+            class="admin-preview preview--logo"
+          />
+        </label>
 
-      <button class="btn" type="submit" :disabled="saving">
-        {{ saving ? 'Сохранение...' : 'Загрузить' }}
-      </button>
+        <label class="field">
+          <span>Фавикон</span>
+          <input type="file" accept="image/png,image/svg+xml" @change="onFaviconChange" />
+          <img
+            v-if="faviconPreview || site.faviconUrl"
+            :src="faviconPreview || site.faviconUrl"
+            alt="Фавикон"
+            class="admin-preview preview--favicon"
+          />
+        </label>
+      </fieldset>
+
+      <div class="admin-actions">
+        <button class="btn" type="submit" :disabled="saving">
+          {{ saving ? 'Сохранение...' : 'Загрузить' }}
+        </button>
+      </div>
     </form>
 
-    <div class="card form">
-      <h3>Каталог</h3>
-      <p class="muted">
-        Если включено, фильтры в каталоге применяются сразу при изменении. Если выключено — нужно
-        нажимать «Применить».
-      </p>
+    <div class="card admin-form">
+      <header class="admin-form__header">
+        <h3>Каталог</h3>
+        <p class="admin-field-hint">
+          Если включено, фильтры применяются сразу при изменении. Если выключено — нужно нажимать «Применить».
+        </p>
+      </header>
 
-      <label class="field checkbox">
-        <input
-          v-model="catalogAutoApplyFilters"
-          type="checkbox"
-          @change="saveCatalogSetting"
-        />
-        <span>Мгновенное применение фильтров в каталоге</span>
-      </label>
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Поведение фильтров</legend>
 
-      <p v-if="savingCatalog" class="muted">Сохранение...</p>
+        <label class="field admin-checkbox">
+          <input
+            v-model="catalogAutoApplyFilters"
+            type="checkbox"
+            @change="saveCatalogSetting"
+          />
+          <span>Мгновенное применение фильтров в каталоге</span>
+        </label>
+
+        <p v-if="savingCatalog" class="admin-field-hint">Сохранение...</p>
+      </fieldset>
     </div>
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error" class="admin-error">{{ error }}</p>
   </section>
 </template>
 
 <style scoped>
-.form {
-  max-width: 480px;
-  margin-bottom: 1rem;
-}
-
-.preview {
-  display: block;
-  margin-top: 0.5rem;
-  object-fit: contain;
-}
-
 .preview--logo {
   max-width: 240px;
   max-height: 80px;
+  object-fit: contain;
 }
 
 .preview--favicon {
   width: 48px;
   height: 48px;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.error {
-  color: #dc2626;
+  object-fit: contain;
 }
 </style>

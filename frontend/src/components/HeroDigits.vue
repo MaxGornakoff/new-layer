@@ -66,7 +66,7 @@ onUnmounted(() => {
     ref="sectionRef"
     class="hero-digits absolute right-0 bottom-0 flex bg-[#F2F7F8] rounded-tl-[20px] box-border pr-0 pb-0 p-5 gap-5"
   >
-    <div class="hero-digits__item-rectangle absolute bottom-0 left-[-24px] w-[25px] h-[26px]">
+    <div class="hero-digits__item-rectangle absolute bottom-[-1px] left-[-24px] w-[25px] h-[26px]">
       <AppIcon name="rectangle" :size="25" />
     </div>
 
@@ -86,7 +86,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="hero-digits__item-rectangle absolute top-[-26px] right-0 w-[25px] h-[26px]">
+    <div class="hero-digits__item-rectangle absolute top-[-25px] right-[-1px] w-[25px] h-[26px]">
       <AppIcon name="rectangle" :size="25" />
     </div>
   </section>

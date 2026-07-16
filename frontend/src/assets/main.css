@@ -37,6 +37,7 @@
   }
 }
 
+
 /* Временные компоненты — постепенно заменяйте на утилиты Tailwind в шаблонах */
 @layer components {
   .layout {
@@ -78,7 +79,11 @@
   .field input,
   .field select,
   .field textarea {
-    @apply w-full rounded-lg border border-slate-300 px-3 py-2.5;
+    @apply w-full rounded-lg border border-slate-300 px-3 py-2.5 bg-[#ffffff];
+  }
+
+  .field input[type="checkbox"]{
+    @apply w-auto h-auto;
   }
 
   .muted {
@@ -97,4 +102,118 @@
   .table td {
     @apply border-b border-border px-3 py-3 text-left;
   }
+
+  .admin-page__header h1 {
+    @apply m-0 mb-1.5 text-2xl font-semibold text-slate-900;
+  }
+
+  .admin-page {
+    @apply grid gap-4;
+  }
+
+  .admin-page__lead {
+    @apply m-0 max-w-2xl text-muted;
+  }
+
+  .admin-form,
+  .admin-list-card,
+  .admin-panel {
+    @apply max-w-[820px];
+  }
+
+  .admin-form--wide {
+    max-width: none;
+  }
+
+  .admin-form__header {
+    @apply mb-6;
+  }
+
+
+  .admin-form__header h3,
+  .admin-card-title {
+    @apply m-0 text-[1.0625rem] font-semibold text-slate-900 text-right inline-block py-2 px-4 bg-[#F2F7F8] rounded-[20px];
+  }
+
+  .admin-form__section {
+    @apply m-0 border-[#F2F7F8] pt-4 border-solid border-t rounded-[12px] bg-[#F8FAFB] px-5 mb-10 pb-3;
+  }
+
+  .admin-form__section--last {
+    @apply pb-1;
+  }
+
+  .admin-form__section-title {
+    @apply py-2 px-4 bg-[#ffffff] border-[#333333] border-solid border-[1px]  rounded-[20px] w-auto text-[0.8125rem] font-bold uppercase tracking-wide text-slate-600 text-center inline-block;
+  }
+
+  .admin-form-grid {
+    @apply grid gap-3 grid-cols-1 sm:grid-cols-2;
+  }
+
+  .admin-form-grid--3 {
+    @apply sm:grid-cols-3;
+  }
+
+  .admin-field-hint {
+    @apply mt-1 text-[0.8125rem] text-muted;
+  }
+
+  .admin-checkbox {
+    @apply mt-2 flex items-center justify-start gap-2;
+  }
+
+  .admin-actions {
+    @apply flex flex-wrap gap-2 pt-2;
+  }
+
+  .admin-error {
+    @apply text-red-600;
+  }
+
+  .admin-success {
+    @apply text-emerald-600;
+  }
+
+  .admin-preview {
+    @apply mt-2 block max-w-full rounded-xl;
+  }
+
+  .admin-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .admin-table-wrap .table th {
+    @apply bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600;
+  }
+
+  .admin-stat-grid {
+    @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .admin-stat-card {
+    @apply rounded-xl border border-border bg-white p-4 no-underline transition-shadow hover:shadow-md;
+  }
+
+  .admin-stat-card strong {
+    @apply block text-base font-semibold text-slate-900;
+  }
+
+  .admin-stat-card span {
+    @apply mt-1 block text-sm text-muted;
+  }
+
+  .admin-list-item {
+    @apply grid gap-3 border-t border-slate-100 pt-4 first:border-t-0 first:pt-0;
+  }
+
+  .admin-nav-link {
+    @apply rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-slate-100;
+  }
+
+  .admin-nav-link.router-link-active {
+    @apply bg-sky-50 font-semibold text-brand;
+  }
+
+
 }

@@ -1,6 +1,8 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import CartProductQuantityControl from '@/components/CartProductQuantityControl.vue'
+import ProductImagesSlider from '@/components/ProductImagesSlider.vue'
+import ProductPrice from '@/components/ProductPrice.vue'
 
 const props = defineProps({
   product: {
@@ -21,6 +23,8 @@ function openProduct() {
     class="card grid cursor-pointer gap-3 transition-shadow duration-200 hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
     @click="openProduct"
   >
+    <ProductImagesSlider :images="product.images" />
+
     <div class="flex items-center justify-between gap-2">
       <span class="badge">{{ product.category?.name }}</span>
       <span class="muted">{{ product.color }}</span>
@@ -31,12 +35,12 @@ function openProduct() {
     <p class="muted m-0">{{ product.diameter }} мм · {{ product.weight_grams }} г</p>
 
     <div class="flex items-center justify-between gap-2">
-      <strong>{{ Number(product.price).toLocaleString('ru-RU') }} ₽</strong>
+      <ProductPrice :product="product" size="sm" />
       <span class="muted">В наличии: {{ product.stock_quantity }}</span>
     </div>
 
     <div @click.stop>
-      <CartProductQuantityControl :product="product" compact />
+      <CartProductQuantityControl :product="product" variant="shelf" />
     </div>
   </article>
 </template>
