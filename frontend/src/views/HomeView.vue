@@ -1,5 +1,7 @@
 <script setup>
+import { ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useHashScroll } from '@/composables/useHashScroll'
 import HeroSlider from '@/components/HeroSlider.vue'
 import HomeCategories from '@/components/HomeCategories.vue'
 import HomeStats from '@/components/HomeStats.vue'
@@ -8,10 +10,13 @@ import HomeAbout from '@/components/HomeAbout.vue'
 import HomeAboutFeatures from '@/components/HomeAboutFeatures.vue'
 
 const route = useRoute()
+const homeRef = ref(null)
+
+useHashScroll(homeRef, { offset: 80 })
 </script>
 
 <template>
-  <div class="home">
+  <div ref="homeRef" class="home">
     <div class="box home__hero">
       <HeroSlider class="home__hero-slider" />
     </div>

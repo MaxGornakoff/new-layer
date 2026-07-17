@@ -44,6 +44,9 @@ async function logout() {
       <AppIcon :name="iconName" />
     </RouterLink>
 
+    <!-- Невидимый мост шириной с модалку — комфортный переход курсора с иконки -->
+    <span class="header-profile__bridge" aria-hidden="true" />
+
     <div class="header-profile__preview">
       <p class="header-profile__title">
         <RouterLink
@@ -82,12 +85,24 @@ async function logout() {
 }
 
 .header-profile__link {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 25px;
   height: 25px;
   color: inherit;
+}
+
+.header-profile__bridge {
+  display: none;
+  position: absolute;
+  top: -0.35rem;
+  right: 0;
+  z-index: 1;
+  width: min(280px, calc(100vw - 2rem));
+  height: calc(100% + 1rem);
 }
 
 .header-profile__preview {
@@ -104,15 +119,7 @@ async function logout() {
   z-index: 120;
 }
 
-.header-profile__preview::before {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 0.5rem;
-}
-
+.header-profile:hover .header-profile__bridge,
 .header-profile:hover .header-profile__preview,
 .header-profile__preview:hover {
   display: block;
@@ -169,6 +176,7 @@ async function logout() {
 }
 
 @media (max-width: 991px) {
+  .header-profile__bridge,
   .header-profile__preview {
     display: none !important;
   }

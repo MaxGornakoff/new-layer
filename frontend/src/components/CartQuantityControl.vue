@@ -19,6 +19,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  variant: {
+    type: String,
+    default: 'shelf',
+    validator: (value) => ['default', 'shelf'].includes(value),
+  },
 })
 
 const cart = useCartStore()
@@ -38,6 +43,7 @@ function onDecreaseAtMin() {
     :min-quantity="1"
     :max-quantity="maxQuantity"
     :compact="compact"
+    :variant="variant"
     allow-remove-at-min
     @update:model-value="onUpdate"
     @decrease-at-min="onDecreaseAtMin"

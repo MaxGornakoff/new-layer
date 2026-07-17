@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
+import AdminFormBanner from '@/components/AdminFormBanner.vue'
 import { formatMoney, resolveCompareAtPrice } from '@/lib/productPrice'
+import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
 
 const products = ref([])
 const categories = ref([])
@@ -11,6 +13,8 @@ const stockDrafts = ref({})
 const loading = ref(true)
 const saving = ref(false)
 const editingId = ref(null)
+const formOpen = ref(false)
+const formRef = ref(null)
 const error = ref('')
 
 const form = reactive({
@@ -66,6 +70,7 @@ function resetMedia() {
 
 function resetForm() {
   editingId.value = null
+  formOpen.value = false
 
   Object.assign(form, {
     category_id: form.category_id, // keep selection if possible
@@ -85,6 +90,12 @@ function resetForm() {
   resetMedia()
 
   error.value = ''
+}
+
+function openCreate() {
+  resetForm()
+  formOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(formRef.value))
 }
 
 function syncStockDrafts() {
@@ -195,7 +206,8 @@ function startEdit(product) {
   remove_video.value = false
 
   error.value = ''
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  formOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(formRef.value))
 }
 
 function buildFormData() {
@@ -355,11 +367,50 @@ watch(
       </p>
     </header>
 
-    <form class="card admin-form" @submit.prevent="saveProduct">
+    <div class="admin-toolbar">
+      <p class="m-0 text-sm text-slate-500">
+        {{ formOpen ? (editingId ? 'Открыта форма редактирования' : 'Открыта форма добавления') : 'Список товаров каталога' }}
+      </p>
+      <button
+        v-if="!formOpen"
+        class="btn"
+        type="button"
+        @click="openCreate"
+      >
+        Добавить товар
+      </button>
+      <button
+        v-else
+        class="btn secondary"
+        type="button"
+        @click="resetForm"
+      >
+        Закрыть форму
+      </button>
+    </div>
+
+    <form
+      v-show="formOpen"
+      ref="formRef"
+      class="card admin-form"
+      :class="{
+        'admin-form--editing': editingId,
+        'admin-form--creating': formOpen && !editingId,
+      }"
+      @submit.prevent="saveProduct"
+    >
       <header class="admin-form__header">
         <h3>{{ editingId ? 'Редактировать товар' : 'Добавить товар' }}</h3>
         <p v-if="editingId" class="admin-field-hint">ID {{ editingId }}</p>
       </header>
+
+      <AdminFormBanner
+        v-if="formOpen"
+        :mode="editingId ? 'edit' : 'create'"
+        :entity="editingId ? 'товар' : 'нового товара'"
+        :title="form.name"
+        @cancel="resetForm"
+      />
 
       <fieldset class="admin-form__section">
         <legend class="admin-form__section-title">Основное</legend>
@@ -557,8 +608,8 @@ watch(
         <button class="btn" type="submit" :disabled="saving">
           {{ saving ? 'Сохранение...' : editingId ? 'Обновить' : 'Добавить' }}
         </button>
-        <button v-if="editingId" class="btn secondary" type="button" @click="resetForm">
-          Отмена
+        <button v-if="formOpen" class="btn secondary" type="button" @click="resetForm">
+          {{ editingId ? 'Отмена' : 'Закрыть' }}
         </button>
       </div>
     </form>
@@ -572,7 +623,12 @@ watch(
       <AppLoader v-if="loading" />
 
       <div v-else-if="products.length" class="products-list">
-        <article v-for="product in products" :key="product.id" class="product-item admin-list-item">
+        <article
+          v-for="product in products"
+          :key="product.id"
+          class="product-item admin-list-item"
+          :class="{ 'admin-list-item--editing': editingId === product.id }"
+        >
           <div class="product-item__media">
             <img
               v-if="product.images?.length"
@@ -611,7 +667,14 @@ watch(
           </div>
 
           <div class="product-item__actions">
-            <button class="btn secondary" type="button" @click="startEdit(product)">Изменить</button>
+            <button
+              class="btn"
+              :class="editingId === product.id ? '' : 'secondary'"
+              type="button"
+              @click="startEdit(product)"
+            >
+              {{ editingId === product.id ? 'Редактируется' : 'Изменить' }}
+            </button>
             <button class="btn secondary" type="button" @click="removeProduct(product)">Удалить</button>
           </div>
         </article>
@@ -799,6 +862,10 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.admin-list-card{
+  max-width: none;
 }
 
 @media (max-width: 720px) {

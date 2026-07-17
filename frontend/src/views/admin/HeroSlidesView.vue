@@ -1,14 +1,18 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
+import AdminFormBanner from '@/components/AdminFormBanner.vue'
 import { stripHtml } from '@/lib/stripHtml'
+import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
 
 const slides = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const savingSettings = ref(false)
 const editingId = ref(null)
+const formOpen = ref(false)
+const formRef = ref(null)
 const error = ref('')
 const settingsError = ref('')
 
@@ -31,6 +35,7 @@ const form = reactive({
 
 function resetForm() {
   editingId.value = null
+  formOpen.value = false
   form.title = ''
   form.subtitle = ''
   form.button_text = ''
@@ -41,6 +46,12 @@ function resetForm() {
   form.imagePreview = null
   form.existingImageUrl = null
   error.value = ''
+}
+
+function openCreate() {
+  resetForm()
+  formOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(formRef.value))
 }
 
 function onImageChange(event) {
@@ -77,6 +88,8 @@ function startEdit(slide) {
   form.imagePreview = null
   form.existingImageUrl = slide.image_url
   error.value = ''
+  formOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(formRef.value))
 }
 
 function buildFormData() {
@@ -202,10 +215,39 @@ onMounted(load)
       </div>
     </form>
 
-    <form class="card admin-form" @submit.prevent="save">
+    <div class="admin-toolbar">
+      <p class="m-0 text-sm text-slate-500">
+        {{ formOpen ? (editingId ? 'Открыта форма редактирования слайда' : 'Открыта форма добавления слайда') : 'Слайды главной' }}
+      </p>
+      <button v-if="!formOpen" class="btn" type="button" @click="openCreate">
+        Добавить слайд
+      </button>
+      <button v-else class="btn secondary" type="button" @click="resetForm">
+        Закрыть форму
+      </button>
+    </div>
+
+    <form
+      v-show="formOpen"
+      ref="formRef"
+      class="card admin-form"
+      :class="{
+        'admin-form--editing': editingId,
+        'admin-form--creating': formOpen && !editingId,
+      }"
+      @submit.prevent="save"
+    >
       <header class="admin-form__header">
         <h3>{{ editingId ? 'Редактировать слайд' : 'Добавить слайд' }}</h3>
       </header>
+
+      <AdminFormBanner
+        v-if="formOpen"
+        :mode="editingId ? 'edit' : 'create'"
+        :entity="editingId ? 'слайд' : 'нового слайда'"
+        :title="stripHtml(form.title)"
+        @cancel="resetForm"
+      />
 
       <fieldset class="admin-form__section">
         <legend class="admin-form__section-title">Медиа</legend>
@@ -268,8 +310,8 @@ onMounted(load)
         <button class="btn" type="submit" :disabled="saving">
           {{ saving ? 'Сохранение...' : editingId ? 'Обновить' : 'Добавить' }}
         </button>
-        <button v-if="editingId" class="btn secondary" type="button" @click="resetForm">
-          Отмена
+        <button v-if="formOpen" class="btn secondary" type="button" @click="resetForm">
+          {{ editingId ? 'Отмена' : 'Закрыть' }}
         </button>
       </div>
     </form>
@@ -283,7 +325,12 @@ onMounted(load)
       <AppLoader v-if="loading" />
 
       <div v-else-if="slides.length" class="slides-list">
-        <article v-for="slide in slides" :key="slide.id" class="slide-item admin-list-item">
+        <article
+          v-for="slide in slides"
+          :key="slide.id"
+          class="slide-item admin-list-item"
+          :class="{ 'admin-list-item--editing': editingId === slide.id }"
+        >
           <img
             :src="slide.image_url"
             :alt="stripHtml(slide.title)"
@@ -301,7 +348,14 @@ onMounted(load)
           </div>
 
           <div class="slide-item__actions">
-            <button class="btn secondary" type="button" @click="startEdit(slide)">Изменить</button>
+            <button
+              class="btn"
+              :class="editingId === slide.id ? '' : 'secondary'"
+              type="button"
+              @click="startEdit(slide)"
+            >
+              {{ editingId === slide.id ? 'Редактируется' : 'Изменить' }}
+            </button>
             <button class="btn secondary" type="button" @click="removeSlide(slide)">Удалить</button>
           </div>
         </article>

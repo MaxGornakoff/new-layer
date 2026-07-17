@@ -15,6 +15,13 @@ const cart = useCartStore()
       <span v-if="cart.totalItems" class="header-cart__badge">{{ cart.totalItems }}</span>
     </RouterLink>
 
+    <!-- Невидимый мост шириной с модалку — комфортный переход курсора с иконки -->
+    <span
+      v-if="cart.items.length"
+      class="header-cart__bridge"
+      aria-hidden="true"
+    />
+
     <div v-if="cart.items.length" class="header-cart__preview">
       <p class="header-cart__title">Корзина</p>
 
@@ -27,15 +34,15 @@ const cart = useCartStore()
             </span>
           </div>
 
-            <div class="header-cart__item-actions">
-              <div @click.stop>
-                <CartQuantityControl
-                  compact
-                  :product-id="item.product_id"
-                  :quantity="item.quantity"
-                  :max-quantity="item.stock_quantity"
-                />
-              </div>
+          <div class="header-cart__item-actions">
+            <div @click.stop>
+              <CartQuantityControl
+                compact
+                :product-id="item.product_id"
+                :quantity="item.quantity"
+                :max-quantity="item.stock_quantity"
+              />
+            </div>
 
             <button
               type="button"
@@ -74,6 +81,7 @@ const cart = useCartStore()
 
 .header-cart__link {
   position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,6 +112,16 @@ const cart = useCartStore()
   text-align: center;
 }
 
+.header-cart__bridge {
+  display: none;
+  position: absolute;
+  top: -0.35rem;
+  right: 0;
+  z-index: 1;
+  width: min(360px, calc(100vw - 2rem));
+  height: calc(100% + 1rem);
+}
+
 .header-cart__preview {
   display: none;
   position: absolute;
@@ -118,15 +136,7 @@ const cart = useCartStore()
   z-index: 120;
 }
 
-.header-cart__preview::before {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 0.5rem;
-}
-
+.header-cart--has-items:hover .header-cart__bridge,
 .header-cart--has-items:hover .header-cart__preview,
 .header-cart__preview:hover {
   display: block;
@@ -212,6 +222,7 @@ const cart = useCartStore()
 }
 
 @media (max-width: 991px) {
+  .header-cart__bridge,
   .header-cart__preview {
     display: none !important;
   }

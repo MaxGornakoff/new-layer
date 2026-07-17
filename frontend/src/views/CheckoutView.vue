@@ -17,6 +17,7 @@ const delivery = ref({
   quote: null,
   city: null,
   pickupPoint: null,
+  deliveryProvider: '',
   deliveryAddress: '',
 })
 
@@ -44,6 +45,7 @@ async function submit() {
   try {
     await api.post('/orders', {
       ...form,
+      delivery_provider: delivery.value.deliveryProvider || delivery.value.quote?.name || null,
       delivery_address: delivery.value.deliveryAddress,
       items: cart.toOrderPayload(),
     })
@@ -58,9 +60,17 @@ async function submit() {
 </script>
 
 <template>
-  <section>
-    <h1>Оформление заказа</h1>
-    <p class="muted">Оплата при получении. Онлайн-оплата будет добавлена позже.</p>
+  <section class="checkout mx-auto w-full max-w-[1440px]">
+    <div class="title-container my-6 flex flex-col gap-2 sm:my-8 sm:gap-2.5 lg:my-10">
+      <h1 class="m-0 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl">Оформление заказа</h1>
+      <p class="muted m-0 flex items-start gap-2 text-[14px] font-medium leading-snug text-[#222222] sm:items-center sm:gap-2.5 sm:text-[16px] lg:text-[18px]">
+        <span
+          class="mt-0.5 inline-flex size-5 min-w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#222222] p-0 text-xs font-semibold sm:mt-0 sm:text-sm"
+        >
+          i
+        </span>
+        Оплата при получении.</p>
+  </div>
 
     <CartOrderPackNotice v-if="cart.items.length" show-catalog-link class="mb-4" />
 

@@ -1,11 +1,24 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
+import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
 
 const sections = ref([])
 const items = ref([])
 const loading = ref(true)
+const savingSection = ref(false)
+const savingItem = ref(false)
+const sectionError = ref('')
+const itemError = ref('')
+
+const sectionFormOpen = ref(false)
+const itemFormOpen = ref(false)
+const editingSectionId = ref(null)
+const editingItemId = ref(null)
+const sectionFormRef = ref(null)
+const itemFormRef = ref(null)
 
 const sectionForm = reactive({
   key: '',
@@ -38,6 +51,74 @@ const sectionOptions = computed(() =>
   })),
 )
 
+function resetSectionForm() {
+  editingSectionId.value = null
+  sectionFormOpen.value = false
+  Object.assign(sectionForm, {
+    key: '',
+    title: '',
+    url: '',
+    type: 'link',
+    include_categories: false,
+    sort_order: 0,
+    is_active: true,
+    open_in_new_tab: false,
+  })
+  sectionError.value = ''
+}
+
+function resetItemForm() {
+  editingItemId.value = null
+  itemFormOpen.value = false
+  Object.assign(itemForm, {
+    parent_key: sections.value[0]?.key || '',
+    title: '',
+    url: '',
+    sort_order: 0,
+    open_in_new_tab: false,
+  })
+  itemError.value = ''
+}
+
+function openCreateSection() {
+  resetSectionForm()
+  sectionFormOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(sectionFormRef.value))
+}
+
+function openCreateItem() {
+  resetItemForm()
+  itemFormOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(itemFormRef.value))
+}
+
+function startEditSection(section) {
+  editingSectionId.value = section.id
+  sectionForm.key = section.key
+  sectionForm.title = section.title
+  sectionForm.url = section.url || ''
+  sectionForm.type = section.type
+  sectionForm.include_categories = Boolean(section.include_categories)
+  sectionForm.sort_order = section.sort_order ?? 0
+  sectionForm.is_active = section.is_active !== false
+  sectionForm.open_in_new_tab = Boolean(section.open_in_new_tab)
+  sectionError.value = ''
+  sectionFormOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(sectionFormRef.value))
+}
+
+function startEditItem(item) {
+  editingItemId.value = item.id
+  itemForm.parent_key = item.parent_key
+  itemForm.title = item.title
+  itemForm.url = item.url
+  itemForm.sort_order = item.sort_order ?? 0
+  itemForm.open_in_new_tab = Boolean(item.open_in_new_tab)
+  itemError.value = ''
+  itemFormOpen.value = true
+  nextTick(() => scrollAdminFormIntoView(itemFormRef.value))
+}
+
 async function load() {
   loading.value = true
   try {
@@ -57,42 +138,78 @@ async function load() {
   }
 }
 
-async function createSection() {
-  await api.post('/admin/menu-sections', sectionForm)
-  Object.assign(sectionForm, {
-    key: '',
-    title: '',
-    url: '',
-    type: 'link',
-    include_categories: false,
-    sort_order: 0,
-    is_active: true,
-    open_in_new_tab: false,
-  })
-  await load()
+async function saveSection() {
+  savingSection.value = true
+  sectionError.value = ''
+
+  try {
+    if (editingSectionId.value) {
+      await api.put(`/admin/menu-sections/${editingSectionId.value}`, sectionForm)
+    } else {
+      await api.post('/admin/menu-sections', sectionForm)
+    }
+
+    resetSectionForm()
+    await load()
+  } catch (err) {
+    const validationErrors = err.response?.data?.errors
+    if (validationErrors) {
+      sectionError.value = Object.values(validationErrors).flat().join(' ')
+    } else {
+      sectionError.value = err.response?.data?.message || 'Не удалось сохранить раздел.'
+    }
+  } finally {
+    savingSection.value = false
+  }
 }
 
 async function removeSection(section) {
   if (!confirm(`Удалить раздел «${section.title}» и все его подпункты?`)) return
-  await api.delete(`/admin/menu-sections/${section.id}`)
-  await load()
+
+  try {
+    await api.delete(`/admin/menu-sections/${section.id}`)
+    if (editingSectionId.value === section.id) resetSectionForm()
+    await load()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Не удалось удалить раздел.')
+  }
 }
 
-async function createItem() {
-  await api.post('/admin/menu-items', itemForm)
-  Object.assign(itemForm, {
-    title: '',
-    url: '',
-    sort_order: 0,
-    open_in_new_tab: false,
-  })
-  await load()
+async function saveItem() {
+  savingItem.value = true
+  itemError.value = ''
+
+  try {
+    if (editingItemId.value) {
+      await api.put(`/admin/menu-items/${editingItemId.value}`, itemForm)
+    } else {
+      await api.post('/admin/menu-items', itemForm)
+    }
+
+    resetItemForm()
+    await load()
+  } catch (err) {
+    const validationErrors = err.response?.data?.errors
+    if (validationErrors) {
+      itemError.value = Object.values(validationErrors).flat().join(' ')
+    } else {
+      itemError.value = err.response?.data?.message || 'Не удалось сохранить подпункт.'
+    }
+  } finally {
+    savingItem.value = false
+  }
 }
 
 async function removeItem(item) {
   if (!confirm(`Удалить «${item.title}»?`)) return
-  await api.delete(`/admin/menu-items/${item.id}`)
-  await load()
+
+  try {
+    await api.delete(`/admin/menu-items/${item.id}`)
+    if (editingItemId.value === item.id) resetItemForm()
+    await load()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Не удалось удалить подпункт.')
+  }
 }
 
 function itemsForSection(sectionKey) {
@@ -111,103 +228,181 @@ onMounted(load)
       </p>
     </header>
 
-    <form class="card admin-form" @submit.prevent="createSection">
+    <div class="admin-toolbar">
+      <p class="m-0 text-sm text-slate-500">
+        {{ sectionFormOpen ? (editingSectionId ? 'Редактирование раздела' : 'Добавление раздела') : 'Разделы меню' }}
+      </p>
+      <button v-if="!sectionFormOpen" class="btn" type="button" @click="openCreateSection">
+        Добавить раздел
+      </button>
+      <button v-else class="btn secondary" type="button" @click="resetSectionForm">
+        Закрыть форму раздела
+      </button>
+    </div>
+
+    <form
+      v-show="sectionFormOpen"
+      ref="sectionFormRef"
+      class="card admin-form"
+      :class="{
+        'admin-form--editing': editingSectionId,
+        'admin-form--creating': sectionFormOpen && !editingSectionId,
+      }"
+      @submit.prevent="saveSection"
+    >
       <header class="admin-form__header">
-        <h3>Добавить раздел меню</h3>
+        <h3>{{ editingSectionId ? 'Редактировать раздел меню' : 'Добавить раздел меню' }}</h3>
       </header>
+
+      <AdminFormBanner
+        v-if="sectionFormOpen"
+        :mode="editingSectionId ? 'edit' : 'create'"
+        :entity="editingSectionId ? 'раздел меню' : 'нового раздела меню'"
+        :title="sectionForm.title"
+        @cancel="resetSectionForm"
+      />
 
       <fieldset class="admin-form__section admin-form__section--last">
         <legend class="admin-form__section-title">Параметры раздела</legend>
 
-      <label class="field">
-        <span>Ключ (латиница)</span>
-        <input v-model="sectionForm.key" placeholder="catalog" required />
-      </label>
+        <label class="field">
+          <span>Ключ (латиница)</span>
+          <input v-model="sectionForm.key" placeholder="catalog" required />
+        </label>
 
-      <label class="field">
-        <span>Название</span>
-        <input v-model="sectionForm.title" required />
-      </label>
+        <label class="field">
+          <span>Название</span>
+          <input v-model="sectionForm.title" required />
+        </label>
 
-      <label class="field">
-        <span>Тип</span>
-        <select v-model="sectionForm.type" required>
-          <option value="link">{{ typeLabels.link }}</option>
-          <option value="dropdown">{{ typeLabels.dropdown }}</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Тип</span>
+          <select v-model="sectionForm.type" required>
+            <option value="link">{{ typeLabels.link }}</option>
+            <option value="dropdown">{{ typeLabels.dropdown }}</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>Ссылка</span>
-        <input v-model="sectionForm.url" placeholder="/delivery или /#about-us" />
-      </label>
+        <label class="field">
+          <span>Ссылка</span>
+          <input v-model="sectionForm.url" placeholder="/delivery или /#about-us" />
+        </label>
 
-      <label class="field">
-        <span>Порядок</span>
-        <input v-model.number="sectionForm.sort_order" type="number" min="0" />
-      </label>
+        <label class="field">
+          <span>Порядок</span>
+          <input v-model.number="sectionForm.sort_order" type="number" min="0" />
+        </label>
 
-      <label v-if="sectionForm.type === 'dropdown'" class="field admin-checkbox">
-        <input v-model="sectionForm.include_categories" type="checkbox" />
-        <span>Добавлять категории каталога в подменю</span>
-      </label>
+        <label v-if="sectionForm.type === 'dropdown'" class="field admin-checkbox">
+          <input v-model="sectionForm.include_categories" type="checkbox" />
+          <span>Добавлять категории каталога в подменю</span>
+        </label>
 
-      <label class="field admin-checkbox">
-        <input v-model="sectionForm.open_in_new_tab" type="checkbox" />
-        <span>Открывать в новой вкладке</span>
-      </label>
+        <label class="field admin-checkbox">
+          <input v-model="sectionForm.open_in_new_tab" type="checkbox" />
+          <span>Открывать в новой вкладке</span>
+        </label>
 
-      <label class="field admin-checkbox">
-        <input v-model="sectionForm.is_active" type="checkbox" />
-        <span>Активен</span>
-      </label>
+        <label class="field admin-checkbox">
+          <input v-model="sectionForm.is_active" type="checkbox" />
+          <span>Активен</span>
+        </label>
       </fieldset>
 
+      <p v-if="sectionError" class="admin-error">{{ sectionError }}</p>
+
       <div class="admin-actions">
-        <button class="btn" type="submit">Сохранить раздел</button>
+        <button class="btn" type="submit" :disabled="savingSection">
+          {{ savingSection ? 'Сохранение...' : editingSectionId ? 'Обновить раздел' : 'Сохранить раздел' }}
+        </button>
+        <button class="btn secondary" type="button" @click="resetSectionForm">
+          {{ editingSectionId ? 'Отмена' : 'Закрыть' }}
+        </button>
       </div>
     </form>
 
-    <form class="card admin-form" @submit.prevent="createItem">
+    <div class="admin-toolbar">
+      <p class="m-0 text-sm text-slate-500">
+        {{ itemFormOpen ? (editingItemId ? 'Редактирование подпункта' : 'Добавление подпункта') : 'Подпункты меню' }}
+      </p>
+      <button
+        v-if="!itemFormOpen"
+        class="btn"
+        type="button"
+        :disabled="!sections.length"
+        @click="openCreateItem"
+      >
+        Добавить подпункт
+      </button>
+      <button v-else class="btn secondary" type="button" @click="resetItemForm">
+        Закрыть форму подпункта
+      </button>
+    </div>
+
+    <form
+      v-show="itemFormOpen"
+      ref="itemFormRef"
+      class="card admin-form"
+      :class="{
+        'admin-form--editing': editingItemId,
+        'admin-form--creating': itemFormOpen && !editingItemId,
+      }"
+      @submit.prevent="saveItem"
+    >
       <header class="admin-form__header">
-        <h3>Добавить подпункт</h3>
+        <h3>{{ editingItemId ? 'Редактировать подпункт' : 'Добавить подпункт' }}</h3>
       </header>
+
+      <AdminFormBanner
+        v-if="itemFormOpen"
+        :mode="editingItemId ? 'edit' : 'create'"
+        :entity="editingItemId ? 'подпункт меню' : 'нового подпункта'"
+        :title="itemForm.title"
+        @cancel="resetItemForm"
+      />
 
       <fieldset class="admin-form__section admin-form__section--last">
         <legend class="admin-form__section-title">Параметры подпункта</legend>
 
-      <label class="field">
-        <span>Раздел</span>
-        <select v-model="itemForm.parent_key" required>
-          <option v-for="option in sectionOptions" :key="option.key" :value="option.key">
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Раздел</span>
+          <select v-model="itemForm.parent_key" required>
+            <option v-for="option in sectionOptions" :key="option.key" :value="option.key">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>Название</span>
-        <input v-model="itemForm.title" required />
-      </label>
+        <label class="field">
+          <span>Название</span>
+          <input v-model="itemForm.title" required />
+        </label>
 
-      <label class="field">
-        <span>Ссылка</span>
-        <input v-model="itemForm.url" placeholder="/delivery или https://..." required />
-      </label>
+        <label class="field">
+          <span>Ссылка</span>
+          <input v-model="itemForm.url" placeholder="/delivery или https://..." required />
+        </label>
 
-      <label class="field">
-        <span>Порядок</span>
-        <input v-model.number="itemForm.sort_order" type="number" min="0" />
-      </label>
+        <label class="field">
+          <span>Порядок</span>
+          <input v-model.number="itemForm.sort_order" type="number" min="0" />
+        </label>
 
-      <label class="field admin-checkbox">
-        <input v-model="itemForm.open_in_new_tab" type="checkbox" />
-        <span>Открывать в новой вкладке</span>
-      </label>
+        <label class="field admin-checkbox">
+          <input v-model="itemForm.open_in_new_tab" type="checkbox" />
+          <span>Открывать в новой вкладке</span>
+        </label>
       </fieldset>
 
+      <p v-if="itemError" class="admin-error">{{ itemError }}</p>
+
       <div class="admin-actions">
-        <button class="btn" type="submit">Сохранить подпункт</button>
+        <button class="btn" type="submit" :disabled="savingItem || !sections.length">
+          {{ savingItem ? 'Сохранение...' : editingItemId ? 'Обновить подпункт' : 'Сохранить подпункт' }}
+        </button>
+        <button class="btn secondary" type="button" @click="resetItemForm">
+          {{ editingItemId ? 'Отмена' : 'Закрыть' }}
+        </button>
       </div>
     </form>
 
@@ -221,31 +416,62 @@ onMounted(load)
 
       <template v-else>
         <div v-if="sections.length" class="menu-sections">
-        <article v-for="section in sections" :key="section.id" class="menu-section admin-list-item">
-        <header class="menu-section__header">
-          <div>
-            <strong>{{ section.title }}</strong>
-            <span class="muted menu-section__meta">
-              {{ typeLabels[section.type] || section.type }}
-              <template v-if="section.url"> · {{ section.url }}</template>
-              <template v-if="section.include_categories"> · + категории</template>
-            </span>
-          </div>
-          <button class="btn secondary" type="button" @click="removeSection(section)">
-            Удалить
-          </button>
-        </header>
+          <article
+            v-for="section in sections"
+            :key="section.id"
+            class="menu-section admin-list-item"
+            :class="{ 'admin-list-item--editing': editingSectionId === section.id }"
+          >
+            <header class="menu-section__header">
+              <div>
+                <strong>{{ section.title }}</strong>
+                <span class="muted menu-section__meta">
+                  {{ typeLabels[section.type] || section.type }}
+                  <template v-if="section.url"> · {{ section.url }}</template>
+                  <template v-if="section.include_categories"> · + категории</template>
+                </span>
+              </div>
+              <div class="menu-section__actions">
+                <button
+                  class="btn"
+                  :class="editingSectionId === section.id ? '' : 'secondary'"
+                  type="button"
+                  @click="startEditSection(section)"
+                >
+                  {{ editingSectionId === section.id ? 'Редактируется' : 'Изменить' }}
+                </button>
+                <button class="btn secondary" type="button" @click="removeSection(section)">
+                  Удалить
+                </button>
+              </div>
+            </header>
 
-        <ul v-if="itemsForSection(section.key).length" class="menu-section__list">
-          <li v-for="item in itemsForSection(section.key)" :key="item.id">
-            <span>{{ item.title }}</span>
-            <span class="muted">{{ item.url }}</span>
-            <button class="btn secondary" type="button" @click="removeItem(item)">Удалить</button>
-          </li>
-        </ul>
+            <ul v-if="itemsForSection(section.key).length" class="menu-section__list">
+              <li
+                v-for="item in itemsForSection(section.key)"
+                :key="item.id"
+                :class="{ 'menu-section__item--editing': editingItemId === item.id }"
+              >
+                <span>{{ item.title }}</span>
+                <span class="muted">{{ item.url }}</span>
+                <div class="menu-section__item-actions">
+                  <button
+                    class="btn"
+                    :class="editingItemId === item.id ? '' : 'secondary'"
+                    type="button"
+                    @click="startEditItem(item)"
+                  >
+                    {{ editingItemId === item.id ? 'Редактируется' : 'Изменить' }}
+                  </button>
+                  <button class="btn secondary" type="button" @click="removeItem(item)">
+                    Удалить
+                  </button>
+                </div>
+              </li>
+            </ul>
 
-        <p v-else class="muted menu-section__empty">Подпунктов нет</p>
-      </article>
+            <p v-else class="muted menu-section__empty">Подпунктов нет</p>
+          </article>
         </div>
 
         <p v-if="!sections.length" class="muted">Разделов меню пока нет.</p>
@@ -273,6 +499,13 @@ onMounted(load)
   font-size: 0.875rem;
 }
 
+.menu-section__actions,
+.menu-section__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .menu-section__list {
   list-style: none;
   margin: 0.75rem 0 0;
@@ -286,9 +519,22 @@ onMounted(load)
   grid-template-columns: 1fr 1fr auto;
   gap: 0.75rem;
   align-items: center;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+}
+
+.menu-section__item--editing {
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px #3b72ff;
 }
 
 .menu-section__empty {
   margin: 0.75rem 0 0;
+}
+
+@media (max-width: 720px) {
+  .menu-section__list li {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

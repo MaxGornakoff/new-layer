@@ -71,12 +71,9 @@ function formatDays(quote) {
 }
 
 function buildDeliveryAddress() {
-  if (!selectedQuote.value || !selectedCity.value) return ''
+  if (!selectedCity.value) return ''
 
-  const parts = [
-    selectedQuote.value.name,
-    `г. ${selectedCity.value.name}`,
-  ]
+  const parts = [`г. ${selectedCity.value.name}`]
 
   if (selectedPickup.value) {
     parts.push(`ПВЗ: ${selectedPickup.value.label}`)
@@ -91,6 +88,7 @@ function emitDelivery() {
     quote: selectedQuote.value,
     city: selectedCity.value,
     pickupPoint: selectedPickup.value,
+    deliveryProvider: selectedQuote.value?.name || '',
     deliveryAddress: buildDeliveryAddress(),
   })
 }

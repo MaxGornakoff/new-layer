@@ -8,14 +8,22 @@ const cart = useCartStore()
 </script>
 
 <template>
-  <section>
-    <h1>Корзина</h1>
-    <p class="muted">Заказ оформляется кратно {{ cart.orderPackSize }} катушкам — в любом составе категорий.</p>
+  <section class="cart mx-auto w-full max-w-[1440px]">
+    <div class="title-container my-6 flex flex-col gap-2 sm:my-8 sm:gap-2.5 lg:my-10">
+      <h1 class="m-0 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl">Корзина</h1>
+      <p class="muted m-0 flex items-start gap-2 text-[14px] font-medium leading-snug text-[#222222] sm:items-center sm:gap-2.5 sm:text-[16px] lg:text-[18px]">
+        <span
+          class="mt-0.5 inline-flex size-5 min-w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#222222] p-0 text-xs font-semibold sm:mt-0 sm:text-sm"
+        >
+          i
+        </span>
+        Заказ оформляется кратно {{ cart.orderPackSize }} катушкам — в любом составе категорий.</p>
+    </div>
 
     <div v-if="cart.items.length" class="grid gap-4">
       <CartOrderPackNotice show-catalog-link />
 
-      <div class="card">
+      <div class="card p-7 flex flex-col justify-end items-end">
         <table class="table">
           <thead>
             <tr>
@@ -45,7 +53,7 @@ const cart = useCartStore()
           </tbody>
         </table>
 
-        <p><strong>Итого: {{ cart.totalPrice.toLocaleString('ru-RU') }} ₽</strong></p>
+        <p class="text-right py-5"><strong>Итого: {{ cart.totalPrice.toLocaleString('ru-RU') }} ₽</strong></p>
 
         <RouterLink
           v-if="cart.canCheckout"

@@ -33,9 +33,9 @@ onMounted(loadProducts)
 </script>
 
 <template>
-  <section>
-    <h1 v-if="searchQuery">Результаты поиска: «{{ searchQuery }}»</h1>
-    <h1 v-else>Поиск</h1>
+  <section class="mx-auto w-full max-w-[1440px]">
+    <h1 class="my-6 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl" v-if="searchQuery">Результаты поиска: «{{ searchQuery }}»</h1>
+    <h1 class="my-6 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl" v-else>Поиск</h1>
 
     <p v-if="!searchQuery" class="muted">Введите запрос в строке поиска в шапке сайта.</p>
     <AppLoader v-else-if="loading" />

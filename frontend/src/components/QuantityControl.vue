@@ -31,6 +31,11 @@ const props = defineProps({
     type: Number,
     default: 1000,
   },
+  variant: {
+    type: String,
+    default: 'default',
+    validator: (value) => ['default', 'shelf'].includes(value),
+  },
 })
 
 const emit = defineEmits(['decrease-at-min'])
@@ -122,6 +127,53 @@ onUnmounted(clearCommitTimer)
 
 <template>
   <div
+    v-if="variant === 'shelf'"
+    class="inline-flex items-stretch overflow-hidden rounded-full bg-[#3B72FF] text-white"
+    :class="[
+      compact ? 'h-9' : 'h-10 sm:h-11',
+      compact ? 'min-w-[120px]' : 'min-w-[140px]',
+      disabled ? 'opacity-60' : '',
+    ]"
+  >
+    <button
+      type="button"
+      class="flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent text-xl leading-none transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+      :class="compact ? 'w-8' : 'w-10'"
+      aria-label="Уменьшить количество"
+      :disabled="disabled || (!allowRemoveAtMin && quantity <= minQuantity)"
+      @click="decrease"
+    >
+      −
+    </button>
+
+    <input
+      v-model="draft"
+      type="number"
+      :min="allowRemoveAtMin ? 0 : minQuantity"
+      :max="maxQuantity"
+      class="m-1 min-w-0 flex-1 rounded-[10px] border-0 bg-[rgba(128,163,254,0.5)] text-center font-semibold text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:cursor-not-allowed"
+      :class="compact ? 'text-xs' : 'text-sm'"
+      aria-label="Количество"
+      :disabled="disabled"
+      @input="scheduleCommit"
+      @blur="onBlur"
+      @keydown="onInputKeydown"
+    />
+
+    <button
+      type="button"
+      class="flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent text-xl leading-none transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+      :class="compact ? 'w-8' : 'w-10'"
+      aria-label="Увеличить количество"
+      :disabled="disabled || quantity >= maxQuantity"
+      @click="increase"
+    >
+      +
+    </button>
+  </div>
+
+  <div
+    v-else
     class="inline-flex items-stretch overflow-hidden rounded-lg border border-border bg-white"
     :class="[compact ? 'text-sm' : '', disabled ? 'opacity-60' : '']"
   >
@@ -130,7 +182,7 @@ onUnmounted(clearCommitTimer)
       class="flex items-center justify-center border-0 bg-slate-50 text-slate-800 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
       :class="compact ? 'size-7' : 'size-9'"
       aria-label="Уменьшить количество"
-      :disabled="disabled || quantity <= minQuantity"
+      :disabled="disabled || (!allowRemoveAtMin && quantity <= minQuantity)"
       @click="decrease"
     >
       −

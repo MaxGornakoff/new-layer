@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import { useSiteStore } from '@/stores/site'
+import { useDrawerSwipe } from '@/composables/useDrawerSwipe'
 import ProductCard from '@/components/ProductCard.vue'
 import ProductFilters from '@/components/ProductFilters.vue'
 import AppLoader from '@/components/AppLoader.vue'
@@ -12,6 +13,7 @@ const products = ref([])
 const filterGroups = ref([])
 const loading = ref(true)
 const filtersOpen = ref(false)
+const filtersPanelRef = ref(null)
 const route = useRoute()
 const router = useRouter()
 const site = useSiteStore()
@@ -166,6 +168,20 @@ function closeFilters() {
   filtersOpen.value = false
 }
 
+const {
+  panelStyle: filtersPanelStyle,
+  isDragging: filtersDragging,
+  onPointerDown: onFiltersPointerDown,
+  onPointerMove: onFiltersPointerMove,
+  onPointerUp: onFiltersPointerUp,
+  onPointerCancel: onFiltersPointerCancel,
+} = useDrawerSwipe({
+  panelRef: filtersPanelRef,
+  isOpen: filtersOpen,
+  onClose: closeFilters,
+  edge: 'left',
+})
+
 function applyFilters({ close = true } = {}) {
   router.replace({ name: 'catalog', query: buildQuery(filters.value) })
   if (close) closeFilters()
@@ -296,9 +312,15 @@ onUnmounted(() => {
       />
 
       <aside
+        ref="filtersPanelRef"
         class="catalog-filters"
-        :class="{ 'is-open': filtersOpen }"
+        :class="{ 'is-open': filtersOpen, 'is-dragging': filtersDragging }"
+        :style="filtersPanelStyle"
         :aria-hidden="false"
+        @pointerdown="onFiltersPointerDown"
+        @pointermove="onFiltersPointerMove"
+        @pointerup="onFiltersPointerUp"
+        @pointercancel="onFiltersPointerCancel"
       >
         <div class="catalog-filters__header">
           <h2 class="catalog-filters__title">Фильтры</h2>
@@ -501,10 +523,18 @@ onUnmounted(() => {
     transform: translateX(-105%);
     transition: transform 0.25s ease;
     overflow: auto;
+    touch-action: pan-y;
   }
 
   .catalog-filters.is-open {
     transform: translateX(0);
+    z-index: 999;
+  }
+
+  .catalog-filters.is-dragging {
+    touch-action: none;
+    cursor: grabbing;
+    user-select: none;
   }
 }
 

@@ -12,10 +12,22 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $sort = $request->string('sort')->toString();
+        $direction = strtolower($request->string('direction')->toString()) === 'asc' ? 'asc' : 'desc';
+
+        $sortable = [
+            'total' => 'total',
+            'created_at' => 'created_at',
+            'status' => 'status',
+        ];
+
+        $sortColumn = $sortable[$sort] ?? 'created_at';
+
         $orders = Order::query()
             ->with(['items', 'client:id,name,phone,email'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-            ->latest()
+            ->orderBy($sortColumn, $direction)
+            ->orderByDesc('id')
             ->paginate(20);
 
         return response()->json($orders);

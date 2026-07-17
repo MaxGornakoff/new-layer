@@ -155,6 +155,30 @@
     @apply sm:grid-cols-3;
   }
 
+  .admin-form--editing {
+    @apply ring-2 ring-[#3B72FF] ring-offset-2 ring-offset-[#F2F7F8];
+  }
+
+  .admin-form--creating {
+    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#F2F7F8];
+  }
+
+  .admin-list-item--editing {
+    @apply bg-[#EFF6FF] ring-2 ring-[#3B72FF];
+  }
+
+  .admin-table-row--editing {
+    @apply bg-[#EFF6FF];
+  }
+
+  .admin-table-row--editing td {
+    @apply border-sky-100;
+  }
+
+  .admin-toolbar {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+  }
+
   .admin-field-hint {
     @apply mt-1 text-[0.8125rem] text-muted;
   }

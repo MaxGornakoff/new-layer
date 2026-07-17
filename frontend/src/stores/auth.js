@@ -62,6 +62,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateProfile(payload) {
+    const { data } = await api.put('/user', payload)
+    user.value = data.user
+    return data.user
+  }
+
   return {
     user,
     token,
@@ -72,6 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     fetchUser,
+    updateProfile,
     bootstrap,
   }
 })

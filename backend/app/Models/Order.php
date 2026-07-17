@@ -28,6 +28,7 @@ class Order extends Model
         'customer_name',
         'customer_phone',
         'customer_email',
+        'delivery_provider',
         'delivery_address',
         'comment',
         'total',

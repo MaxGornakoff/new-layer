@@ -38,10 +38,25 @@ const router = createRouter({
       ],
     },
   ],
-  scrollBehavior(to) {
+  scrollBehavior(to, from, savedPosition) {
     if (to.hash) {
-      return { el: to.hash, top: 80, behavior: 'smooth' }
+      // На главной высота меняется после загрузки полок — точный скролл
+      // дорабатывает useHashScroll. Здесь только мягкая ранняя попытка.
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          if (!document.querySelector(to.hash)) {
+            resolve({ top: 0 })
+            return
+          }
+          resolve({ el: to.hash, top: 80, behavior: 'smooth' })
+        }, 50)
+      })
     }
+
+    if (savedPosition) {
+      return savedPosition
+    }
+
     return { top: 0 }
   },
 })

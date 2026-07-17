@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import api from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
-import AppIcon from '@/components/AppIcon.vue'
+import { useDrawerSwipe } from '@/composables/useDrawerSwipe'
 import HeaderSearch from '@/components/HeaderSearch.vue'
 import HeaderCart from '@/components/HeaderCart.vue'
 import HeaderProfile from '@/components/HeaderProfile.vue'
@@ -17,8 +17,11 @@ const categories = ref([])
 const menuSections = ref([])
 const mobileMenuOpen = ref(false)
 const mobileExpanded = ref({})
+const mobilePanelRef = ref(null)
 
 onMounted(async () => {
+  window.addEventListener('keydown', onKeydown)
+
   const [categoriesResponse, menuResponse] = await Promise.all([
     api.get('/categories'),
     api.get('/menu'),
@@ -28,13 +31,21 @@ onMounted(async () => {
   menuSections.value = menuResponse.data.data
 })
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+})
+
 watch(
   () => route.fullPath,
   () => {
-    mobileMenuOpen.value = false
-    mobileExpanded.value = {}
+    closeMobileMenu()
   },
 )
+
+watch(mobileMenuOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
 
 function sectionSubitems(section) {
   const fromCategories = section.include_categories
@@ -72,11 +83,34 @@ function isExternalUrl(url) {
   return /^https?:\/\//i.test(url)
 }
 
+function openMobileMenu() {
+  mobileMenuOpen.value = true
+}
+
 function closeMobileMenu() {
   mobileMenuOpen.value = false
   mobileExpanded.value = {}
 }
 
+const {
+  panelStyle: mobilePanelStyle,
+  isDragging: mobileDragging,
+  onPointerDown: onMobilePointerDown,
+  onPointerMove: onMobilePointerMove,
+  onPointerUp: onMobilePointerUp,
+  onPointerCancel: onMobilePointerCancel,
+} = useDrawerSwipe({
+  panelRef: mobilePanelRef,
+  isOpen: mobileMenuOpen,
+  onClose: closeMobileMenu,
+  edge: 'right',
+})
+
+function onKeydown(event) {
+  if (event.key === 'Escape' && mobileMenuOpen.value) {
+    closeMobileMenu()
+  }
+}
 </script>
 
 <template>
@@ -172,7 +206,7 @@ function closeMobileMenu() {
           :aria-expanded="mobileMenuOpen"
           aria-controls="site-header-mobile-menu"
           aria-label="Меню"
-          @click="mobileMenuOpen = !mobileMenuOpen"
+          @click="openMobileMenu"
         >
           <span></span>
           <span></span>
@@ -180,63 +214,105 @@ function closeMobileMenu() {
         </button>
       </div>
     </div>
-
-    <div
-      id="site-header-mobile-menu"
-      class="site-header__mobile"
-      :class="{ 'site-header__mobile--open': mobileMenuOpen }"
-    >
-      <nav class="site-header__mobile-nav" aria-label="Мобильное меню">
-        <ul class="site-header__mobile-list">
-          <li v-for="section in menuSections" :key="section.id" class="site-header__mobile-item">
-            <template v-if="isDropdown(section)">
-              <button
-                type="button"
-                class="site-header__mobile-toggle"
-                :aria-expanded="Boolean(mobileExpanded[section.key])"
-                @click="toggleMobileAccordion(section.key)"
-              >
-                {{ section.title }}
-              </button>
-              <ul v-if="mobileExpanded[section.key]" class="site-header__mobile-sublist">
-                <li v-for="item in sectionSubitems(section)" :key="item.id">
-                  <a
-                    v-if="isExternalUrl(item.url)"
-                    :href="item.url"
-                    class="site-header__mobile-sublink"
-                    :target="item.openInNewTab ? '_blank' : undefined"
-                    :rel="item.openInNewTab ? 'noopener noreferrer' : undefined"
-                    @click="closeMobileMenu"
-                  >
-                    {{ item.title }}
-                  </a>
-                  <RouterLink
-                    v-else
-                    :to="item.url"
-                    class="site-header__mobile-sublink"
-                    @click="closeMobileMenu"
-                  >
-                    {{ item.title }}
-                  </RouterLink>
-                </li>
-              </ul>
-            </template>
-
-            <RouterLink
-              v-else-if="section.url"
-              :to="section.url"
-              class="site-header__mobile-link"
-              :target="section.open_in_new_tab ? '_blank' : undefined"
-              :rel="section.open_in_new_tab ? 'noopener noreferrer' : undefined"
-              @click="closeMobileMenu"
-            >
-              {{ section.title }}
-            </RouterLink>
-          </li>
-        </ul>
-      </nav>
-    </div>
   </header>
+
+  <div
+    class="site-header__mobile-backdrop"
+    :class="{ 'is-open': mobileMenuOpen }"
+    aria-hidden="true"
+    @click="closeMobileMenu"
+  />
+
+  <aside
+    id="site-header-mobile-menu"
+    ref="mobilePanelRef"
+    class="site-header__mobile"
+    :class="{ 'is-open': mobileMenuOpen, 'is-dragging': mobileDragging }"
+    :style="mobilePanelStyle"
+    :aria-hidden="!mobileMenuOpen"
+    @pointerdown="onMobilePointerDown"
+    @pointermove="onMobilePointerMove"
+    @pointerup="onMobilePointerUp"
+    @pointercancel="onMobilePointerCancel"
+  >
+    <div class="site-header__mobile-header">
+      <h2 class="site-header__mobile-title">Меню</h2>
+      <button
+        type="button"
+        class="site-header__mobile-close"
+        aria-label="Закрыть меню"
+        @click="closeMobileMenu"
+      >
+        ×
+      </button>
+    </div>
+
+    <nav class="site-header__mobile-nav" aria-label="Мобильное меню">
+      <ul class="site-header__mobile-list">
+        <li v-for="section in menuSections" :key="section.id" class="site-header__mobile-item">
+          <template v-if="isDropdown(section)">
+            <button
+              type="button"
+              class="site-header__mobile-toggle"
+              :aria-expanded="Boolean(mobileExpanded[section.key])"
+              @click="toggleMobileAccordion(section.key)"
+            >
+              <span>{{ section.title }}</span>
+              <span
+                class="site-header__mobile-chevron"
+                :class="{ 'is-open': mobileExpanded[section.key] }"
+                aria-hidden="true"
+              >
+                ›
+              </span>
+            </button>
+            <ul v-if="mobileExpanded[section.key]" class="site-header__mobile-sublist">
+              <li v-for="item in sectionSubitems(section)" :key="item.id">
+                <a
+                  v-if="isExternalUrl(item.url)"
+                  :href="item.url"
+                  class="site-header__mobile-sublink"
+                  :target="item.openInNewTab ? '_blank' : undefined"
+                  :rel="item.openInNewTab ? 'noopener noreferrer' : undefined"
+                  @click="closeMobileMenu"
+                >
+                  {{ item.title }}
+                </a>
+                <RouterLink
+                  v-else
+                  :to="item.url"
+                  class="site-header__mobile-sublink"
+                  @click="closeMobileMenu"
+                >
+                  {{ item.title }}
+                </RouterLink>
+              </li>
+            </ul>
+          </template>
+
+          <RouterLink
+            v-else-if="section.url"
+            :to="section.url"
+            class="site-header__mobile-link"
+            :target="section.open_in_new_tab ? '_blank' : undefined"
+            :rel="section.open_in_new_tab ? 'noopener noreferrer' : undefined"
+            @click="closeMobileMenu"
+          >
+            {{ section.title }}
+          </RouterLink>
+        </li>
+      </ul>
+
+      <RouterLink
+        v-if="auth.isAdmin"
+        to="/admin"
+        class="site-header__mobile-admin"
+        @click="closeMobileMenu"
+      >
+        Админка
+      </RouterLink>
+    </nav>
+  </aside>
 </template>
 
 <style scoped>
@@ -361,7 +437,7 @@ function closeMobileMenu() {
 }
 
 .site-header__burger {
-  display: inline-flex;
+  display: none;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
@@ -380,48 +456,182 @@ function closeMobileMenu() {
   background: #222222;
 }
 
-.site-header__mobile {
+.site-header__mobile-backdrop {
   display: none;
-  border-top: 1px solid #e2e8f0;
-  background: #fff;
 }
 
-.site-header__mobile--open {
-  display: block;
+.site-header__mobile {
+  display: none;
+}
+
+.site-header__mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.site-header__mobile-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.site-header__mobile-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #222;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.site-header__mobile-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .site-header__mobile-list {
   list-style: none;
   margin: 0;
-  padding: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
 }
 
 .site-header__mobile-item {
-  border-bottom: 1px solid #f1f5f9;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
 }
 
 .site-header__mobile-link,
 .site-header__mobile-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   padding: 0.9rem 1rem;
   text-align: left;
-  color: inherit;
+  color: #222;
+  font-size: 0.9375rem;
+  font-weight: 600;
   background: none;
   border: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.site-header__mobile-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.site-header__mobile-chevron.is-open {
+  transform: rotate(90deg);
 }
 
 .site-header__mobile-sublist {
   list-style: none;
   margin: 0;
   padding: 0 0 0.5rem;
-  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
 }
 
 .site-header__mobile-sublink {
   display: block;
-  padding: 0.65rem 1.5rem;
-  color: inherit;
+  padding: 0.65rem 1rem 0.65rem 1.25rem;
+  color: #222;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.site-header__mobile-sublink:hover {
+  color: #3b72ff;
+}
+
+.site-header__mobile-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #222;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+@media (max-width: 991px) {
+  .site-header__burger {
+    display: inline-flex;
+  }
+
+  .site-header__mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    display: block;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .site-header__mobile-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .site-header__mobile {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 360px);
+    height: 100%;
+    padding: 1rem 1rem 1.5rem;
+    background: #f2f7f8;
+    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.18);
+    transform: translateX(105%);
+    transition: transform 0.25s ease;
+    overflow: auto;
+    touch-action: pan-y;
+  }
+
+  .site-header__mobile.is-open {
+    transform: translateX(0);
+  }
+
+  .site-header__mobile.is-dragging {
+    touch-action: none;
+    cursor: grabbing;
+    user-select: none;
+  }
 }
 
 @media (min-width: 992px) {
@@ -430,7 +640,8 @@ function closeMobileMenu() {
   }
 
   .site-header__burger,
-  .site-header__mobile {
+  .site-header__mobile,
+  .site-header__mobile-backdrop {
     display: none !important;
   }
 }

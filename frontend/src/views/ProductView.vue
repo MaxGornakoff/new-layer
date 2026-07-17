@@ -112,7 +112,7 @@ onMounted(loadProduct)
           {{ product.name }}
         </h1>
 
-        <ProductPrice :product="product" size="lg" />
+        <ProductPrice :product="product" size="lg" badge />
 
         <dl class="m-0 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
           <div
@@ -139,7 +139,7 @@ onMounted(loadProduct)
           <span>Заказ от {{ ORDER_PACK_SIZE }} шт. (кратно {{ ORDER_PACK_SIZE }})</span>
         </p>
 
-        <div class="w-full max-w-none sm:max-w-sm">
+        <div class="w-full max-w-none sm:max-w-[220px]">
           <CartProductQuantityControl :product="product" variant="shelf" />
         </div>
 
