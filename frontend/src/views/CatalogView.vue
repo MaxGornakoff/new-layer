@@ -7,6 +7,7 @@ import { useDrawerSwipe } from '@/composables/useDrawerSwipe'
 import ProductCard from '@/components/ProductCard.vue'
 import ProductFilters from '@/components/ProductFilters.vue'
 import AppLoader from '@/components/AppLoader.vue'
+import { isHexColor, isLightHexColor } from '@/lib/productColor'
 
 const categories = ref([])
 const products = ref([])
@@ -71,7 +72,12 @@ const activeFilters = computed(() => {
   }
 
   for (const color of filters.value.color) {
-    items.push({ key: 'color', value: color, label: `Цвет: ${optionLabel('color', color)}` })
+    items.push({
+      key: 'color',
+      value: color,
+      label: isHexColor(color) ? 'Цвет' : `Цвет: ${optionLabel('color', color)}`,
+      swatch: isHexColor(color) ? color : null,
+    })
   }
 
   for (const diameter of filters.value.diameter) {
@@ -288,6 +294,13 @@ onUnmounted(() => {
         :key="`${filter.key}:${filter.value ?? ''}`"
         class="active-filters__chip"
       >
+        <span
+          v-if="filter.swatch"
+          class="active-filters__swatch"
+          :class="{ 'active-filters__swatch--light': isLightHexColor(filter.swatch) }"
+          :style="{ backgroundColor: filter.swatch }"
+          aria-hidden="true"
+        />
         {{ filter.label }}
         <button
           type="button"
@@ -418,6 +431,18 @@ onUnmounted(() => {
   background: #e0f2fe;
   color: #0369a1;
   font-size: 0.8125rem;
+}
+
+.active-filters__swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.active-filters__swatch--light {
+  border-color: #94a3b8;
 }
 
 .active-filters__remove {

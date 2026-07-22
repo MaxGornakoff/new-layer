@@ -1,11 +1,21 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import api from '@/api/client'
-import AppLoader from '@/components/AppLoader.vue'
 import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
 import { formatMoney, resolveCompareAtPrice } from '@/lib/productPrice'
 import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
+import {
+  PRODUCT_COLOR_PRESETS,
+  isHexColor,
+  isLightHexColor,
+  normalizeHexColor,
+} from '@/lib/productColor'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const products = ref([])
 const categories = ref([])
 const stockUpdating = ref({})
@@ -25,7 +35,7 @@ const form = reactive({
   price: 0,
   compare_at_price: null,
   compare_at_markup_percent: null,
-  color: '',
+  color: '#3B82F6',
   diameter: 1.75,
   weight_grams: 1000,
   stock_quantity: 0,
@@ -80,7 +90,7 @@ function resetForm() {
     price: 0,
     compare_at_price: null,
     compare_at_markup_percent: null,
-    color: '',
+    color: '#3B82F6',
     diameter: 1.75,
     weight_grams: 1000,
     stock_quantity: 0,
@@ -190,7 +200,7 @@ function startEdit(product) {
     compare_at_price: product.compare_at_price != null ? Number(product.compare_at_price) : null,
     compare_at_markup_percent:
       product.compare_at_markup_percent != null ? Number(product.compare_at_markup_percent) : null,
-    color: product.color,
+    color: normalizeHexColor(product.color) || '#3B82F6',
     diameter: Number(product.diameter),
     weight_grams: product.weight_grams,
     stock_quantity: product.stock_quantity,
@@ -272,7 +282,9 @@ function buildFormData() {
   return formData
 }
 
-async function saveProduct() {
+async function saveProduct(event) {
+  if (!validateForm(event?.target)) return
+
   saving.value = true
   error.value = ''
 
@@ -289,11 +301,11 @@ async function saveProduct() {
     await load()
   } catch (err) {
     const validationErrors = err.response?.data?.errors
-    if (validationErrors) {
-      error.value = Object.values(validationErrors).flat().join(' ')
-    } else {
-      error.value = err.response?.data?.message || 'Не удалось сохранить товар.'
-    }
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить товар.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -308,7 +320,7 @@ async function removeProduct(product) {
     if (editingId.value === product.id) resetForm()
     await load()
   } catch (err) {
-    alert(err.response?.data?.message || 'Не удалось удалить товар.')
+    toast.error(err.response?.data?.message || 'Не удалось удалить товар.')
   }
 }
 
@@ -325,7 +337,7 @@ async function applyStockChange(product, delta) {
     stockDrafts.value[product.id] = data.data.stock_quantity
   } catch (err) {
     stockDrafts.value[product.id] = product.stock_quantity
-    alert(err.response?.data?.message || 'Не удалось обновить остаток.')
+    toast.error(err.response?.data?.message || 'Не удалось обновить остаток.')
   } finally {
     stockUpdating.value[product.id] = false
   }
@@ -397,6 +409,7 @@ watch(
         'admin-form--editing': editingId,
         'admin-form--creating': formOpen && !editingId,
       }"
+      novalidate
       @submit.prevent="saveProduct"
     >
       <header class="admin-form__header">
@@ -488,10 +501,36 @@ watch(
         <legend class="admin-form__section-title">Характеристики</legend>
 
         <div class="admin-form-grid">
-          <label class="field">
+          <div class="field">
             <span>Цвет</span>
-            <input v-model="form.color" required />
-          </label>
+            <div class="color-input">
+              <input v-model="form.color" type="color" required />
+              <input
+                v-model="form.color"
+                type="text"
+                pattern="^#[0-9A-Fa-f]{6}$"
+                placeholder="#3B82F6"
+                required
+                @blur="form.color = normalizeHexColor(form.color) || form.color"
+              />
+            </div>
+            <div class="color-presets" role="listbox" aria-label="Палитра цветов">
+              <button
+                v-for="preset in PRODUCT_COLOR_PRESETS"
+                :key="preset"
+                type="button"
+                class="color-preset"
+                :class="{
+                  'color-preset--active': normalizeHexColor(form.color) === preset,
+                  'color-preset--light': isLightHexColor(preset),
+                }"
+                :style="{ backgroundColor: preset }"
+                :title="preset"
+                :aria-label="`Выбрать ${preset}`"
+                @click="form.color = preset"
+              />
+            </div>
+          </div>
 
           <label class="field">
             <span>Диаметр, мм</span>
@@ -642,7 +681,15 @@ watch(
             <strong>{{ product.name }}</strong>
             <p class="muted m-0">{{ product.category?.name }} · {{ product.sku }}</p>
             <p class="muted m-0 product-item__meta">
-              {{ product.color }} · {{ Number(product.price).toLocaleString('ru-RU') }} ₽
+              <span
+                v-if="isHexColor(product.color)"
+                class="product-item__swatch"
+                :class="{ 'product-item__swatch--light': isLightHexColor(product.color) }"
+                :style="{ backgroundColor: product.color }"
+                :title="product.color"
+              />
+              <template v-else>{{ product.color }}</template>
+              · {{ Number(product.price).toLocaleString('ru-RU') }} ₽
               <span v-if="product.compare_at_price_display">
                 · <span class="product-item__compare">{{ Number(product.compare_at_price_display).toLocaleString('ru-RU') }} ₽</span>
               </span>
@@ -667,15 +714,18 @@ watch(
           </div>
 
           <div class="product-item__actions">
-            <button
-              class="btn"
-              :class="editingId === product.id ? '' : 'secondary'"
-              type="button"
+            <AdminIconButton
+              icon="pencil"
+              :label="editingId === product.id ? 'Редактируется' : 'Изменить'"
+              :active="editingId === product.id"
               @click="startEdit(product)"
-            >
-              {{ editingId === product.id ? 'Редактируется' : 'Изменить' }}
-            </button>
-            <button class="btn secondary" type="button" @click="removeProduct(product)">Удалить</button>
+            />
+            <AdminIconButton
+              icon="trash"
+              label="Удалить"
+              variant="danger"
+              @click="removeProduct(product)"
+            />
           </div>
         </article>
       </div>
@@ -706,6 +756,70 @@ watch(
 .price-preview__compare {
   color: #94a3b8;
   text-decoration: line-through;
+}
+
+.color-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-input input[type='color'] {
+  width: 3rem;
+  height: 2.5rem;
+  padding: 0.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+.color-input input[type='text'] {
+  flex: 1;
+}
+
+.color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.color-preset {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.color-preset--light {
+  border-color: #cbd5e1;
+}
+
+.color-preset--active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b72ff;
+}
+
+.product-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.product-item__swatch {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  vertical-align: middle;
+}
+
+.product-item__swatch--light {
+  border-color: #cbd5e1;
 }
 
 .preview {

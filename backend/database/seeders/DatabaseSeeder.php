@@ -49,11 +49,11 @@ class DatabaseSeeder extends Seeder
         }
 
         $samples = [
-            ['category' => 'pla', 'name' => 'PLA Красный', 'color' => 'Красный', 'price' => 890],
-            ['category' => 'pla', 'name' => 'PLA Чёрный', 'color' => 'Чёрный', 'price' => 890],
-            ['category' => 'abs', 'name' => 'ABS Белый', 'color' => 'Белый', 'price' => 950],
-            ['category' => 'petg', 'name' => 'PETG Синий', 'color' => 'Синий', 'price' => 920],
-            ['category' => 'composite', 'name' => 'Carbon PLA', 'color' => 'Чёрный', 'price' => 1450],
+            ['category' => 'pla', 'name' => 'PLA Красный', 'color' => '#EF4444', 'price' => 890],
+            ['category' => 'pla', 'name' => 'PLA Чёрный', 'color' => '#111827', 'price' => 890],
+            ['category' => 'abs', 'name' => 'ABS Белый', 'color' => '#FFFFFF', 'price' => 950],
+            ['category' => 'petg', 'name' => 'PETG Синий', 'color' => '#3B82F6', 'price' => 920],
+            ['category' => 'composite', 'name' => 'Carbon PLA', 'color' => '#111827', 'price' => 1450],
         ];
 
         foreach ($samples as $index => $sample) {

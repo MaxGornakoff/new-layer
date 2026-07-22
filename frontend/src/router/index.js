@@ -19,6 +19,11 @@ const router = createRouter({
         { path: 'profile', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { requiresAuth: true } },
         { path: 'delivery', name: 'delivery', component: () => import('@/views/DeliveryView.vue') },
         { path: 'wholesale', name: 'wholesale', component: () => import('@/views/WholesaleView.vue') },
+        {
+          path: 'legal/:slug',
+          name: 'legal-document',
+          component: () => import('@/views/LegalDocumentView.vue'),
+        },
       ],
     },
     {

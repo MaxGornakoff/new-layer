@@ -18,9 +18,18 @@ const menuSections = ref([])
 const mobileMenuOpen = ref(false)
 const mobileExpanded = ref({})
 const mobilePanelRef = ref(null)
+const isScrolled = ref(false)
+
+const SCROLL_THRESHOLD = 12
+
+function updateScrollState() {
+  isScrolled.value = window.scrollY > SCROLL_THRESHOLD
+}
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
+  window.addEventListener('scroll', updateScrollState, { passive: true })
+  updateScrollState()
 
   const [categoriesResponse, menuResponse] = await Promise.all([
     api.get('/categories'),
@@ -33,6 +42,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('scroll', updateScrollState)
   document.body.style.overflow = ''
 })
 
@@ -114,7 +124,10 @@ function onKeydown(event) {
 </script>
 
 <template>
-  <header class="site-header rounded-[20px] z-100 relative h-18 flex items-center">
+  <header
+    class="site-header sticky z-[100] flex h-18 items-center rounded-[20px] bg-[#F2F7F8]/95 backdrop-blur-md"
+    :class="{ 'site-header--scrolled': isScrolled }"
+  >
     <div class="box site-header__inner flex items-center justify-between">
       <RouterLink to="/" class="site-header__logo" @click="closeMobileMenu">
         <img
@@ -316,9 +329,39 @@ function onKeydown(event) {
 </template>
 
 <style scoped>
+.site-header {
+  top: 0;
+  margin-inline: -10px;
+  padding-inline: 10px;
+  padding-block: 0.35rem;
+  transition:
+    top 0.2s ease,
+    margin 0.2s ease,
+    padding 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
 
+.site-header--scrolled {
+  top: 5px;
+  margin-inline: -5px;
+  padding-inline: 1rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
 
+@media (min-width: 992px) {
+  .site-header {
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
+  }
 
+  .site-header--scrolled {
+    top: 5px;
+    margin-inline: -10px;
+    padding-inline: 1.15rem;
+  }
+}
 
 .site-header__logo {
   font-weight: 700;

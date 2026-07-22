@@ -61,8 +61,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('products/{product}/stock', [AdminStockController::class, 'store']);
 
         Route::get('orders', [AdminOrderController::class, 'index']);
+        Route::get('orders/new-count', [AdminOrderController::class, 'newCount']);
         Route::get('orders/{order}', [AdminOrderController::class, 'show']);
         Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::delete('orders/{order}', [AdminOrderController::class, 'destroy']);
 
         Route::apiResource('clients', AdminClientController::class)->except(['create', 'edit']);
 
@@ -90,5 +92,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('delivery-settings/test/dellin', [AdminDeliverySettingController::class, 'testDellin']);
         Route::post('delivery-settings/test/yandex', [AdminDeliverySettingController::class, 'testYandex']);
         Route::post('delivery-settings/test/zheldor', [AdminDeliverySettingController::class, 'testZheldor']);
+        Route::post('delivery-settings/test/russian-post', [AdminDeliverySettingController::class, 'testRussianPost']);
     });
 });

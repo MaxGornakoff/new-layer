@@ -43,9 +43,9 @@ const contacts = {
 }
 
 const legalLinks = [
-  { label: 'Политика обработки персональных данных', to: '#' },
-  { label: 'Политика использования cookie', to: '#' },
-  { label: 'Согласие на обработку персональных данных', to: '#' },
+  { label: 'Политика обработки персональных данных', to: '/legal/privacy-policy' },
+  { label: 'Политика использования cookie', to: '/legal/cookie-policy' },
+  { label: 'Согласие на обработку персональных данных', to: '/legal/personal-data-consent' },
 ]
 
 const categoryLinks = computed(() =>
@@ -168,12 +168,12 @@ onMounted(async () => {
         <nav aria-label="Документы" class="min-w-0">
           <ul class="m-0 flex list-none flex-col gap-2.5 p-0">
             <li v-for="link in legalLinks" :key="link.label">
-              <a
-                :href="link.to"
+              <RouterLink
+                :to="link.to"
                 class="text-[14px] leading-snug text-[#222222] no-underline transition-opacity hover:opacity-70"
               >
                 {{ link.label }}
-              </a>
+              </RouterLink>
             </li>
           </ul>
         </nav>

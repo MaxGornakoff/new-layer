@@ -1,27 +1,36 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import api from '@/api/client'
+import AdminIconButton from '@/components/AdminIconButton.vue'
 import AppLoader from '@/components/AppLoader.vue'
-import { getOrderStatusLabel } from '@/lib/orderStatus'
+import { getOrderStatusLabel, getOrderStatusClass, ORDER_STATUS_LABELS } from '@/lib/orderStatus'
 import { resolveOrderDelivery } from '@/lib/orderDelivery'
+import { useAdminOrdersStore } from '@/stores/adminOrders'
+import { useToastStore } from '@/stores/toast'
+
+const adminOrders = useAdminOrdersStore()
+const toast = useToastStore()
 
 const orders = ref([])
 const loading = ref(true)
+const deletingId = ref(null)
 const expanded = reactive({})
 const details = reactive({})
 const detailLoading = reactive({})
 
 const sortKey = ref('created_at')
 const sortDir = ref('desc')
+const statusFilter = ref('')
 
-const statuses = [
-  'new',
-  'confirmed',
-  'processing',
-  'shipped',
-  'completed',
-  'cancelled',
-]
+const statuses = Object.keys(ORDER_STATUS_LABELS)
+
+const statusTabs = computed(() => [
+  { value: '', label: 'Все' },
+  ...statuses.map((status) => ({
+    value: status,
+    label: getOrderStatusLabel(status),
+  })),
+])
 
 const sortColumns = [
   { key: 'created_at', label: 'Дата' },
@@ -29,19 +38,31 @@ const sortColumns = [
   { key: 'status', label: 'Статус' },
 ]
 
+const listTitle = computed(() => {
+  if (!statusFilter.value) return 'Все заказы'
+  return getOrderStatusLabel(statusFilter.value)
+})
+
 async function load() {
   loading.value = true
   try {
-    const { data } = await api.get('/admin/orders', {
-      params: {
-        sort: sortKey.value,
-        direction: sortDir.value,
-      },
-    })
+    const params = {
+      sort: sortKey.value,
+      direction: sortDir.value,
+    }
+    if (statusFilter.value) {
+      params.status = statusFilter.value
+    }
+
+    const { data } = await api.get('/admin/orders', { params })
     orders.value = data.data
   } finally {
     loading.value = false
   }
+}
+
+function setStatusFilter(value) {
+  statusFilter.value = value
 }
 
 function toggleSort(key) {
@@ -80,11 +101,34 @@ async function toggle(order) {
 async function updateStatus(order, status) {
   await api.patch(`/admin/orders/${order.id}/status`, { status })
 
-  const row = orders.value.find((item) => item.id === order.id)
-  if (row) row.status = status
+  if (statusFilter.value && statusFilter.value !== status) {
+    orders.value = orders.value.filter((item) => item.id !== order.id)
+    delete expanded[order.id]
+    delete details[order.id]
+  } else {
+    const row = orders.value.find((item) => item.id === order.id)
+    if (row) row.status = status
+    if (details[order.id]) details[order.id].status = status
+  }
 
-  if (details[order.id]) {
-    details[order.id].status = status
+  adminOrders.refresh()
+}
+
+async function removeOrder(order) {
+  if (!confirm(`Удалить заказ ${order.number}?`)) return
+
+  deletingId.value = order.id
+  try {
+    await api.delete(`/admin/orders/${order.id}`)
+    orders.value = orders.value.filter((item) => item.id !== order.id)
+    delete expanded[order.id]
+    delete details[order.id]
+    toast.success(`Заказ ${order.number} удалён`)
+    adminOrders.refresh()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Не удалось удалить заказ.')
+  } finally {
+    deletingId.value = null
   }
 }
 
@@ -106,7 +150,7 @@ function lineTotal(item) {
   return Number(item.price) * item.quantity
 }
 
-watch([sortKey, sortDir], load)
+watch([sortKey, sortDir, statusFilter], load)
 
 onMounted(load)
 </script>
@@ -120,9 +164,26 @@ onMounted(load)
       </p>
     </header>
 
+    <div class="mb-4 flex flex-wrap gap-2">
+      <button
+        v-for="tab in statusTabs"
+        :key="tab.value || 'all'"
+        type="button"
+        class="rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors"
+        :class="
+          statusFilter === tab.value
+            ? 'border-[#2563eb] bg-sky-50 text-[#2563eb]'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+        "
+        @click="setStatusFilter(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
     <div class="card admin-list-card admin-form--wide">
       <header class="admin-form__header">
-        <h3>Все заказы</h3>
+        <h3>{{ listTitle }}</h3>
         <p v-if="!loading && orders.length" class="admin-field-hint">{{ orders.length }} заказов</p>
       </header>
 
@@ -131,7 +192,7 @@ onMounted(load)
       <template v-else>
         <div v-if="orders.length" class="overflow-hidden rounded-xl border border-border bg-white">
           <div
-            class="hidden gap-3 border-b border-border bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid lg:grid-cols-[2rem_1.1fr_1fr_0.9fr_0.9fr_1.2fr]"
+            class="hidden gap-3 border-b border-border bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid lg:grid-cols-[2rem_1.1fr_1fr_0.9fr_0.9fr_1.2fr_2.5rem]"
           >
             <span aria-hidden="true" />
             <span>Номер</span>
@@ -160,6 +221,7 @@ onMounted(load)
             >
               Статус{{ sortIndicator('status') }}
             </button>
+            <span class="sr-only">Действия</span>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3 lg:hidden">
@@ -219,8 +281,10 @@ onMounted(load)
                   <div @click.stop>
                     <p class="m-0 mb-1 text-xs text-muted lg:hidden">Статус</p>
                     <select
-                      class="status-select"
+                      class="status-select inline-flex appearance-none rounded-full border-0 px-2.5 py-0.5 text-xs font-medium outline-none"
+                      :class="getOrderStatusClass(order.status)"
                       :value="order.status"
+                      :aria-label="`Статус заказа ${order.number}`"
                       @change="updateStatus(order, $event.target.value)"
                     >
                       <option v-for="status in statuses" :key="status" :value="status">
@@ -229,6 +293,16 @@ onMounted(load)
                     </select>
                   </div>
                 </button>
+
+                <div class="mt-0.5 shrink-0" @click.stop>
+                  <AdminIconButton
+                    icon="trash"
+                    label="Удалить заказ"
+                    variant="danger"
+                    :disabled="deletingId === order.id"
+                    @click="removeOrder(order)"
+                  />
+                </div>
               </div>
 
               <div
@@ -285,7 +359,9 @@ onMounted(load)
           </ul>
         </div>
 
-        <p v-else class="muted">Заказов пока нет.</p>
+        <p v-else class="muted">
+          {{ statusFilter ? 'Заказов с этим статусом пока нет.' : 'Заказов пока нет.' }}
+        </p>
       </template>
     </div>
   </section>
@@ -293,11 +369,17 @@ onMounted(load)
 
 <style scoped>
 .status-select {
-  min-width: 10rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: #fff;
+  min-width: 8.5rem;
+  max-width: 100%;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  padding-right: 1.6rem;
+}
+
+.status-select:focus-visible {
+  box-shadow: 0 0 0 2px rgba(59, 114, 255, 0.35);
 }
 
 .sort-btn {

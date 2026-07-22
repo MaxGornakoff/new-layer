@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import CookieConsentBanner from '@/components/CookieConsentBanner.vue'
 
 const route = useRoute()
 const isFullWidth = computed(() => Boolean(route.meta.fullWidth))
@@ -22,6 +23,7 @@ const isFullWidth = computed(() => Boolean(route.meta.fullWidth))
     </main>
 
     <AppFooter />
+    <CookieConsentBanner />
   </div>
 </template>
 

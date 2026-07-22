@@ -5,6 +5,8 @@ import api from '@/api/client'
 import AppIcon from '@/components/AppIcon.vue'
 import AppLoader from '@/components/AppLoader.vue'
 
+const MOBILE_BREAKPOINT = 992
+
 const router = useRouter()
 const route = useRoute()
 
@@ -16,19 +18,38 @@ const results = ref([])
 const loading = ref(false)
 const hasSearched = ref(false)
 const anchorStyle = ref({})
+const isMobile = ref(false)
 
 let debounceTimer = null
 
 const trimmedQuery = computed(() => query.value.trim())
 const showPanel = computed(() => isOpen.value && trimmedQuery.value.length >= 2)
 
+function syncViewport() {
+  isMobile.value = window.innerWidth <= MOBILE_BREAKPOINT
+}
+
 function updatePosition() {
   if (!placeholder.value) return
 
+  syncViewport()
   const rect = placeholder.value.getBoundingClientRect()
+
+  if (isMobile.value) {
+    anchorStyle.value = {
+      top: `${rect.top + rect.height / 2}px`,
+      left: '0.75rem',
+      right: '0.75rem',
+      width: 'auto',
+    }
+    return
+  }
+
   anchorStyle.value = {
     top: `${rect.top + rect.height / 2}px`,
     right: `${window.innerWidth - rect.right}px`,
+    left: 'auto',
+    width: 'auto',
   }
 }
 
@@ -101,6 +122,7 @@ watch(
 )
 
 onMounted(() => {
+  syncViewport()
   window.addEventListener('resize', updatePosition)
   window.addEventListener('scroll', updatePosition, true)
 })
@@ -141,10 +163,14 @@ onUnmounted(() => {
     <div
       v-if="isOpen"
       class="header-search__anchor"
+      :class="{ 'header-search__anchor--mobile': isMobile }"
       :style="anchorStyle"
       @click.stop
     >
-      <div class="header-search__bar header-search__bar--open">
+      <div
+        class="header-search__bar header-search__bar--open"
+        :class="{ 'header-search__bar--mobile': isMobile }"
+      >
         <input
           ref="inputRef"
           v-model="query"
@@ -168,7 +194,11 @@ onUnmounted(() => {
       </div>
 
       <Transition name="header-search-panel">
-        <div v-if="showPanel" class="header-search__panel">
+        <div
+          v-if="showPanel"
+          class="header-search__panel"
+          :class="{ 'header-search__panel--mobile': isMobile }"
+        >
           <AppLoader v-if="loading" inline />
 
           <template v-else-if="results.length">
@@ -229,6 +259,10 @@ onUnmounted(() => {
   transform: translateY(-50%);
 }
 
+.header-search__anchor--mobile {
+  transform: translateY(-50%);
+}
+
 .header-search__bar {
   display: flex;
   align-items: center;
@@ -244,10 +278,17 @@ onUnmounted(() => {
 .header-search__bar--open {
   width: min(360px, calc(100vw - 2rem));
   height: 3rem;
-  .header-search__toggle{
-    position: relative;
-    right: 5px;
-  }
+}
+
+.header-search__bar--open .header-search__toggle {
+  position: relative;
+  right: 5px;
+}
+
+.header-search__bar--mobile {
+  width: 100%;
+  transform-origin: right center;
+  animation: header-search-bar-in-mobile 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .header-search__input {
@@ -291,6 +332,12 @@ onUnmounted(() => {
   background: #fff;
   border-radius: 0.75rem;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.header-search__panel--mobile {
+  left: 0;
+  right: 0;
+  width: 100%;
 }
 
 .header-search__list {
@@ -361,6 +408,22 @@ onUnmounted(() => {
   }
 }
 
+@keyframes header-search-bar-in-mobile {
+  from {
+    width: 2.5rem;
+    margin-left: auto;
+    opacity: 0.9;
+    transform: translateX(0.35rem);
+  }
+
+  to {
+    width: 100%;
+    margin-left: 0;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .header-search-backdrop-enter-active,
 .header-search-backdrop-leave-active {
   transition: opacity 0.25s ease;
@@ -382,25 +445,6 @@ onUnmounted(() => {
 .header-search-panel-leave-to {
   opacity: 0;
   transform: translateY(-6px);
-}
-
-@media (max-width: 992px) {
-  .header-search__bar--open,
-  .header-search__panel {
-    width: min(320px, calc(100vw - 1.5rem));
-  }
-
-  @keyframes header-search-bar-in {
-    from {
-      width: 20px;
-      opacity: 0.85;
-    }
-
-    to {
-      width: min(320px, calc(100vw - 1.5rem));
-      opacity: 1;
-    }
-  }
 }
 </style>
 

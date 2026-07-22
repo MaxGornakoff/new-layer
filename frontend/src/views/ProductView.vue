@@ -7,6 +7,7 @@ import CartProductQuantityControl from '@/components/CartProductQuantityControl.
 import ProductImagesSlider from '@/components/ProductImagesSlider.vue'
 import ProductPrice from '@/components/ProductPrice.vue'
 import { ORDER_PACK_SIZE } from '@/lib/orderPack'
+import { isHexColor, isLightHexColor } from '@/lib/productColor'
 
 const route = useRoute()
 const product = ref(null)
@@ -30,7 +31,11 @@ const specs = computed(() => {
   if (!product.value) return []
 
   return [
-    { label: 'Цвет', value: product.value.color },
+    {
+      label: 'Цвет',
+      value: product.value.color,
+      swatch: isHexColor(product.value.color) ? product.value.color : null,
+    },
     { label: 'Диаметр', value: `${product.value.diameter} мм` },
     { label: 'Вес', value: `${product.value.weight_grams} г` },
     {
@@ -72,7 +77,7 @@ onMounted(loadProduct)
       <div class="min-w-0 rounded-[16px] bg-white p-3.5 sm:rounded-[20px] sm:p-6 lg:p-8">
         <div class="relative">
           <span
-            class="absolute left-0 top-0 z-10 rounded-full px-2.5 py-1 text-[11px] font-medium text-white sm:px-3 sm:text-xs"
+            class="absolute right-0 top-0 z-10 rounded-full px-2.5 py-1 text-[11px] font-medium text-white sm:px-3 sm:text-xs"
             :class="stockBadge.className"
           >
             {{ stockBadge.label }}
@@ -122,7 +127,16 @@ onMounted(loadProduct)
           >
             <dt class="m-0 text-[12px] text-slate-400 sm:text-[14px]">{{ spec.label }}</dt>
             <dd class="m-0 mt-0.5 text-[14px] font-semibold text-[#222222] sm:mt-1 sm:text-[16px]">
-              {{ spec.value }}
+              <span
+                v-if="spec.swatch"
+                class="inline-block size-5 rounded-full border border-black/10 align-middle sm:size-6"
+                :class="{ 'border-slate-300': isLightHexColor(spec.swatch) }"
+                :style="{ backgroundColor: spec.swatch }"
+                :title="spec.value"
+                role="img"
+                :aria-label="spec.value"
+              />
+              <template v-else>{{ spec.value }}</template>
             </dd>
           </div>
         </dl>

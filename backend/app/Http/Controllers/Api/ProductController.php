@@ -48,9 +48,14 @@ class ProductController extends Controller
                         'key' => 'color',
                         'title' => 'Цвет',
                         'options' => array_map(
-                            static fn (string $color) => ['value' => $color, 'label' => $color],
+                            static fn (string $color) => [
+                                'value' => $color,
+                                'label' => $color,
+                                'hex' => preg_match('/^#[0-9A-Fa-f]{6}$/', $color) === 1 ? $color : null,
+                            ],
                             $colors,
                         ),
+                        'display' => 'swatches',
                     ],
                     [
                         'key' => 'diameter',

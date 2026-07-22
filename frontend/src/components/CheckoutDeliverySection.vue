@@ -22,18 +22,40 @@ const selectedCity = ref(null)
 const selectedProvider = ref('')
 const selectedQuote = ref(null)
 const selectedPickup = ref(null)
+const destinationPostalCode = ref('')
 const quotes = ref([])
 const loading = ref(false)
 const error = ref('')
 
+let postalDebounce = null
 
 const availableQuotes = computed(() =>
   quotes.value.filter((quote) => quote.available && quote.price !== null),
 )
 
+const russianPostQuote = computed(() =>
+  quotes.value.find((quote) => quote.provider === 'russian_post') ?? null,
+)
+
+const displayQuotes = computed(() => {
+  const list = [...availableQuotes.value]
+  const russian = russianPostQuote.value
+
+  if (
+    russian
+    && !list.some((quote) => quote.provider === 'russian_post')
+  ) {
+    list.push(russian)
+  }
+
+  return list
+})
+
 const selectedProviderMeta = computed(
   () => providers.value.find((provider) => provider.key === selectedProvider.value) ?? null,
 )
+
+const showPostalField = computed(() => selectedProvider.value === 'russian_post')
 
 const canSelectPickup = computed(
   () => Boolean(selectedProvider.value && selectedProviderMeta.value?.has_pickup_points && selectedCity.value?.id),
@@ -41,7 +63,8 @@ const canSelectPickup = computed(
 
 const deliveryReady = computed(
   () => Boolean(
-    selectedQuote.value?.price != null
+    selectedQuote.value?.available
+    && selectedQuote.value?.price != null
     && selectedCity.value
     && (
       !selectedProviderMeta.value?.has_pickup_points
@@ -74,6 +97,10 @@ function buildDeliveryAddress() {
   if (!selectedCity.value) return ''
 
   const parts = [`г. ${selectedCity.value.name}`]
+
+  if (destinationPostalCode.value.trim()) {
+    parts.push(`индекс ${destinationPostalCode.value.trim()}`)
+  }
 
   if (selectedPickup.value) {
     parts.push(`ПВЗ: ${selectedPickup.value.label}`)
@@ -115,6 +142,10 @@ function buildCalculatePayload(terminalId = null) {
     total_quantity: props.totalQuantity,
   }
 
+  if (destinationPostalCode.value.trim()) {
+    payload.destination_postal_code = destinationPostalCode.value.trim()
+  }
+
   if (selectedCity.value.source === 'dellin') {
     payload.destination_city_id = selectedCity.value.id
   } else if (selectedCity.value.source === 'yandex_delivery') {
@@ -134,17 +165,20 @@ function buildCalculatePayload(terminalId = null) {
   return payload
 }
 
-async function calculateQuotes(terminalId = null) {
+async function calculateQuotes(options = {}) {
+  const terminalId = options.terminalId ?? null
+  const resetSelection = options.resetSelection === true
+
   if (!props.canCalculate || !selectedCity.value?.name) return
 
   loading.value = true
   error.value = ''
 
-  if (!terminalId) {
-    quotes.value = []
+  if (resetSelection) {
     selectedProvider.value = ''
     selectedQuote.value = null
     selectedPickup.value = null
+    destinationPostalCode.value = ''
   }
 
   try {
@@ -152,10 +186,19 @@ async function calculateQuotes(terminalId = null) {
 
     quotes.value = data.data.quotes ?? []
 
-    if (terminalId && selectedProvider.value) {
+    if (selectedProvider.value) {
       const updated = quotes.value.find((quote) => quote.provider === selectedProvider.value)
       if (updated?.available && updated.price !== null) {
         selectedQuote.value = updated
+        if (
+          updated.provider === 'russian_post'
+          && updated.postal_code
+          && !destinationPostalCode.value.trim()
+        ) {
+          destinationPostalCode.value = String(updated.postal_code)
+        }
+      } else if (updated) {
+        selectedQuote.value = null
       }
     }
 
@@ -169,22 +212,30 @@ async function calculateQuotes(terminalId = null) {
 }
 
 function selectProvider(quote) {
-  if (!quote.available || quote.price === null) return
-
   selectedProvider.value = quote.provider
-  selectedQuote.value = quote
   selectedPickup.value = null
+
+  if (quote.available && quote.price !== null) {
+    selectedQuote.value = quote
+    if (quote.provider === 'russian_post' && quote.postal_code && !destinationPostalCode.value.trim()) {
+      destinationPostalCode.value = String(quote.postal_code)
+    }
+  } else {
+    selectedQuote.value = null
+  }
+
   emitDelivery()
 }
 
 watch(selectedCity, (value) => {
   if (value?.id) {
-    calculateQuotes()
+    calculateQuotes({ resetSelection: true })
   } else {
     quotes.value = []
     selectedProvider.value = ''
     selectedQuote.value = null
     selectedPickup.value = null
+    destinationPostalCode.value = ''
     emitDelivery()
   }
 })
@@ -196,7 +247,7 @@ watch(selectedPickup, (pickup) => {
       || selectedProvider.value === 'zheldor')
     && pickup?.id
   ) {
-    calculateQuotes(pickup.id)
+    calculateQuotes({ terminalId: pickup.id })
     return
   }
 
@@ -211,6 +262,15 @@ watch(
     }
   },
 )
+
+function onPostalCodeInput() {
+  if (!selectedCity.value?.id || selectedProvider.value !== 'russian_post') return
+
+  clearTimeout(postalDebounce)
+  postalDebounce = setTimeout(() => {
+    calculateQuotes()
+  }, 2000)
+}
 
 loadProviders()
 </script>
@@ -234,15 +294,18 @@ loadProviders()
 
     <p v-else-if="error" class="error">{{ error }}</p>
 
-    <div v-else-if="availableQuotes.length" class="grid gap-3">
+    <div v-else-if="displayQuotes.length" class="grid gap-3">
       <p class="m-0 text-sm font-medium">Служба доставки</p>
 
       <div class="providers-grid">
         <label
-          v-for="quote in availableQuotes"
+          v-for="quote in displayQuotes"
           :key="quote.provider"
           class="provider-option"
-          :class="{ 'provider-option--active': selectedProvider === quote.provider }"
+          :class="{
+            'provider-option--active': selectedProvider === quote.provider,
+            'provider-option--pending': !quote.available || quote.price === null,
+          }"
         >
           <input
             v-model="selectedProvider"
@@ -253,10 +316,30 @@ loadProviders()
             @change="selectProvider(quote)"
           />
           <span class="provider-option__name">{{ quote.name }}</span>
-          <span class="provider-option__price">{{ formatPrice(quote.price) }} ₽</span>
+          <span v-if="quote.available && quote.price != null" class="provider-option__price">
+            {{ formatPrice(quote.price) }} ₽
+          </span>
+          <span v-else class="provider-option__hint">
+            {{ quote.message || 'Укажите индекс получателя' }}
+          </span>
           <span v-if="formatDays(quote)" class="provider-option__days">{{ formatDays(quote) }}</span>
         </label>
       </div>
+
+      <label v-if="showPostalField" class="field m-0">
+        <span>Индекс получателя</span>
+        <input
+          v-model="destinationPostalCode"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="190000"
+          @input="onPostalCodeInput"
+        />
+        <span class="muted text-xs">
+          Подставили по городу — при необходимости поправьте на более точный индекс отделения.
+        </span>
+      </label>
 
       <DeliveryAutocomplete
         v-if="canSelectPickup"
@@ -271,7 +354,14 @@ loadProviders()
       />
 
       <p
-        v-else-if="selectedProvider && !selectedProviderMeta?.has_pickup_points"
+        v-else-if="selectedProvider === 'russian_post' && deliveryReady"
+        class="muted m-0 text-sm"
+      >
+        Доставка до отделения Почты России по индексу получателя.
+      </p>
+
+      <p
+        v-else-if="selectedProvider && selectedProvider !== 'russian_post' && !selectedProviderMeta?.has_pickup_points"
         class="muted m-0 text-sm"
       >
         Выбор ПВЗ для этой службы подключим на следующем шаге.
@@ -322,6 +412,10 @@ loadProviders()
   box-shadow: 0 0 0 1px #2563eb;
 }
 
+.provider-option--pending {
+  border-style: dashed;
+}
+
 .provider-option__name {
   font-weight: 600;
 }
@@ -329,6 +423,12 @@ loadProviders()
 .provider-option__price {
   font-size: 1.125rem;
   font-weight: 700;
+}
+
+.provider-option__hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.35;
 }
 
 .provider-option__days {

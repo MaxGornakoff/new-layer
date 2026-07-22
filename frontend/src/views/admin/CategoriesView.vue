@@ -1,10 +1,14 @@
 <script setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import AppLoader from '@/components/AppLoader.vue'
 import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
 import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const categories = ref([])
 const editingId = ref(null)
 const formOpen = ref(false)
@@ -117,7 +121,9 @@ function buildFormData() {
   return formData
 }
 
-async function save() {
+async function save(event) {
+  if (!validateForm(event?.target)) return
+
   saving.value = true
   error.value = ''
 
@@ -134,7 +140,9 @@ async function save() {
     resetForm()
     await load()
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось сохранить категорию.'
+    const message = err.response?.data?.message || 'Не удалось сохранить категорию.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -150,7 +158,7 @@ async function removeCategory(category) {
     }
     await load()
   } catch (err) {
-    alert(err.response?.data?.message || 'Не удалось удалить категорию.')
+    toast.error(err.response?.data?.message || 'Не удалось удалить категорию.')
   }
 }
 
@@ -186,6 +194,7 @@ onMounted(load)
         'admin-form--editing': editingId,
         'admin-form--creating': formOpen && !editingId,
       }"
+      novalidate
       @submit.prevent="save"
     >
       <header class="admin-form__header">
@@ -347,15 +356,18 @@ onMounted(load)
             <td>{{ category.slug }}</td>
             <td>{{ category.sort_order }}</td>
             <td class="row-actions">
-              <button
-                class="btn"
-                :class="editingId === category.id ? '' : 'secondary'"
-                type="button"
+              <AdminIconButton
+                icon="pencil"
+                :label="editingId === category.id ? 'Редактируется' : 'Изменить'"
+                :active="editingId === category.id"
                 @click="startEdit(category)"
-              >
-                {{ editingId === category.id ? 'Редактируется' : 'Изменить' }}
-              </button>
-              <button class="btn secondary" type="button" @click="removeCategory(category)">Удалить</button>
+              />
+              <AdminIconButton
+                icon="trash"
+                label="Удалить"
+                variant="danger"
+                @click="removeCategory(category)"
+              />
             </td>
           </tr>
         </tbody>

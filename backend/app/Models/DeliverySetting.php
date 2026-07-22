@@ -26,6 +26,8 @@ class DeliverySetting extends Model
         'cdek_client_id',
         'cdek_client_secret',
         'cdek_use_test_api',
+        'russian_post_enabled',
+        'russian_post_object_type',
         'baikal_api_key',
         'dellin_app_key',
         'pek_login',
@@ -59,6 +61,8 @@ class DeliverySetting extends Model
             'zheldor_enabled' => 'boolean',
             'cdek_enabled' => 'boolean',
             'cdek_use_test_api' => 'boolean',
+            'russian_post_enabled' => 'boolean',
+            'russian_post_object_type' => 'integer',
             'cdek_client_secret' => 'encrypted',
             'baikal_api_key' => 'encrypted',
             'dellin_app_key' => 'encrypted',
@@ -90,6 +94,7 @@ class DeliverySetting extends Model
             'yandex_delivery' => (bool) $this->yandex_delivery_enabled,
             'zheldor' => (bool) $this->zheldor_enabled,
             'cdek' => (bool) $this->cdek_enabled,
+            'russian_post' => (bool) $this->russian_post_enabled,
             'pek' => (bool) $this->pek_enabled,
             default => false,
         };
@@ -103,6 +108,7 @@ class DeliverySetting extends Model
             'yandex_delivery' => filled($this->resolveYandexDeliveryToken()),
             'zheldor' => filled($this->resolveZheldorLogin()) && filled($this->resolveZheldorPassword()),
             'cdek' => filled($this->resolveCdekClientId()) && filled($this->resolveCdekClientSecret()),
+            'russian_post' => filled($this->resolveProviderSender('russian_post')?->postalCode),
             'pek' => filled($this->resolvePekLogin()) && filled($this->resolvePekApiKey()),
             default => false,
         };
@@ -125,6 +131,22 @@ class DeliverySetting extends Model
         }
 
         return config('delivery.providers.cdek.api_base_url', 'https://api.cdek.ru/v2');
+    }
+
+    public function resolveRussianPostApiBaseUrl(): string
+    {
+        return config('delivery.providers.russian_post.api_base_url', 'https://tariff.pochta.ru');
+    }
+
+    public function resolveRussianPostObjectType(): int
+    {
+        $configured = $this->russian_post_object_type;
+
+        if (is_numeric($configured) && (int) $configured > 0) {
+            return (int) $configured;
+        }
+
+        return (int) config('delivery.providers.russian_post.object_type', 4030);
     }
 
     public function resolveBaikalApiKey(): ?string

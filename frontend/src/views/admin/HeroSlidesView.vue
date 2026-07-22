@@ -1,11 +1,15 @@
 <script setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import AppLoader from '@/components/AppLoader.vue'
 import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
 import { stripHtml } from '@/lib/stripHtml'
 import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const slides = ref([])
 const loading = ref(true)
 const saving = ref(false)
@@ -108,7 +112,9 @@ function buildFormData() {
   return formData
 }
 
-async function saveSliderSettings() {
+async function saveSliderSettings(event) {
+  if (!validateForm(event?.target)) return
+
   savingSettings.value = true
   settingsError.value = ''
 
@@ -123,17 +129,23 @@ async function saveSliderSettings() {
     const { data } = await api.post('/admin/site-settings', formData)
     sliderSettings.autoplay = data.data.hero_slider_autoplay ?? true
     sliderSettings.autoplayIntervalSeconds = data.data.hero_slider_autoplay_interval ?? 6
+    toast.success('Настройки слайдера сохранены')
   } catch (err) {
-    settingsError.value =
-      err.response?.data?.message || 'Не удалось сохранить настройки слайдера.'
+    const message = err.response?.data?.message || 'Не удалось сохранить настройки слайдера.'
+    settingsError.value = message
+    toast.error(message)
   } finally {
     savingSettings.value = false
   }
 }
 
-async function save() {
+async function save(event) {
+  if (!validateForm(event?.target)) return
+
   if (!editingId.value && !form.imageFile) {
-    error.value = 'Выберите изображение для слайда.'
+    const message = 'Выберите изображение для слайда.'
+    error.value = message
+    toast.warning(message)
     return
   }
 
@@ -153,7 +165,9 @@ async function save() {
     resetForm()
     await load()
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось сохранить слайд.'
+    const message = err.response?.data?.message || 'Не удалось сохранить слайд.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -181,7 +195,7 @@ onMounted(load)
       <p class="admin-page__lead">Слайды отображаются под шапкой на главной странице.</p>
     </header>
 
-    <form class="card admin-form" @submit.prevent="saveSliderSettings">
+    <form class="card admin-form" novalidate @submit.prevent="saveSliderSettings">
       <header class="admin-form__header">
         <h3>Настройки слайдера</h3>
       </header>
@@ -235,6 +249,7 @@ onMounted(load)
         'admin-form--editing': editingId,
         'admin-form--creating': formOpen && !editingId,
       }"
+      novalidate
       @submit.prevent="save"
     >
       <header class="admin-form__header">
@@ -348,15 +363,18 @@ onMounted(load)
           </div>
 
           <div class="slide-item__actions">
-            <button
-              class="btn"
-              :class="editingId === slide.id ? '' : 'secondary'"
-              type="button"
+            <AdminIconButton
+              icon="pencil"
+              :label="editingId === slide.id ? 'Редактируется' : 'Изменить'"
+              :active="editingId === slide.id"
               @click="startEdit(slide)"
-            >
-              {{ editingId === slide.id ? 'Редактируется' : 'Изменить' }}
-            </button>
-            <button class="btn secondary" type="button" @click="removeSlide(slide)">Удалить</button>
+            />
+            <AdminIconButton
+              icon="trash"
+              label="Удалить"
+              variant="danger"
+              @click="removeSlide(slide)"
+            />
           </div>
         </article>
       </div>

@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import ProductImagesSlider from '@/components/ProductImagesSlider.vue'
 import CartProductQuantityControl from '@/components/CartProductQuantityControl.vue'
 import ProductPrice from '@/components/ProductPrice.vue'
-import { ORDER_PACK_SIZE } from '@/lib/orderPack'
 
 const props = defineProps({
   product: {
@@ -63,16 +62,10 @@ function openProduct() {
       </h3>
 
       <p
-        class="m-0 flex items-center gap-1 text-[12px] text-slate-400 sm:text-[14px] lg:text-[16px]"
-        :title="`Минимальный заказ кратен ${ORDER_PACK_SIZE} катушкам`"
+        v-if="product.description"
+        class="m-0 line-clamp-2 text-[12px] leading-snug text-slate-400 sm:text-[14px] lg:text-[15px]"
       >
-        <span>Заказ от {{ ORDER_PACK_SIZE }} шт.</span>
-        <span
-          class="inline-flex size-3.5 items-center justify-center rounded-full border border-slate-400 text-[9px] leading-none sm:size-4 sm:text-[10px]"
-          aria-hidden="true"
-        >
-          i
-        </span>
+        {{ product.description }}
       </p>
 
       <CartProductQuantityControl :product="product" variant="shelf" />

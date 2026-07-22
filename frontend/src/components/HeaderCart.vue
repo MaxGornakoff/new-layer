@@ -9,32 +9,48 @@ const cart = useCartStore()
 </script>
 
 <template>
-  <div class="header-cart flex items-center" :class="{ 'header-cart--has-items': cart.totalItems > 0 }">
-    <RouterLink to="/cart" class="header-cart__link" aria-label="Корзина">
+  <div class="group relative flex items-center">
+    <RouterLink
+      to="/cart"
+      class="relative z-[2] inline-flex size-5 items-center justify-center text-inherit min-[992px]:size-[25px]"
+      aria-label="Корзина"
+    >
       <AppIcon name="cart" />
-      <span v-if="cart.totalItems" class="header-cart__badge">{{ cart.totalItems }}</span>
+      <span
+        v-if="cart.totalItems"
+        class="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#2563eb] px-1 text-center text-[0.7rem] leading-[18px] text-white"
+      >
+        {{ cart.totalItems }}
+      </span>
     </RouterLink>
 
     <!-- Невидимый мост шириной с модалку — комфортный переход курсора с иконки -->
     <span
       v-if="cart.items.length"
-      class="header-cart__bridge"
+      class="absolute top-[-0.35rem] right-0 z-[1] hidden h-[calc(100%+1rem)] w-[min(360px,calc(100vw-2rem))] min-[992px]:group-hover:block"
       aria-hidden="true"
     />
 
-    <div v-if="cart.items.length" class="header-cart__preview">
-      <p class="header-cart__title">Корзина</p>
+    <div
+      v-if="cart.items.length"
+      class="absolute top-[calc(100%+0.5rem)] right-0 z-[120] hidden w-[min(360px,calc(100vw-2rem))] rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.12)] min-[992px]:group-hover:block"
+    >
+      <p class="mb-3 text-[18px] font-semibold">Корзина</p>
 
-      <ul class="header-cart__list">
-        <li v-for="item in cart.items" :key="item.product_id" class="header-cart__item">
-          <div class="header-cart__item-info">
-            <span class="header-cart__item-name">{{ item.name }}</span>
-            <span class="header-cart__item-price">
+      <ul class="m-0 max-h-[280px] list-none overflow-y-auto p-0">
+        <li
+          v-for="item in cart.items"
+          :key="item.product_id"
+          class="grid gap-2 border-b border-slate-100 py-[0.65rem] last:border-b-0"
+        >
+          <div class="flex justify-between gap-3">
+            <span class="min-w-0 truncate">{{ item.name }}</span>
+            <span class="shrink-0 font-semibold">
               {{ (item.price * item.quantity).toLocaleString('ru-RU') }} ₽
             </span>
           </div>
 
-          <div class="header-cart__item-actions">
+          <div class="flex items-center justify-between gap-3">
             <div @click.stop>
               <CartQuantityControl
                 compact
@@ -46,7 +62,7 @@ const cart = useCartStore()
 
             <button
               type="button"
-              class="header-cart__remove"
+              class="flex size-7 cursor-pointer items-center justify-center rounded-lg border-0 bg-slate-100 text-[1.1rem] leading-none hover:bg-slate-200"
               aria-label="Удалить из корзины"
               @click.stop="cart.removeItem(item.product_id)"
             >
@@ -56,15 +72,15 @@ const cart = useCartStore()
         </li>
       </ul>
 
-      <div class="header-cart__footer">
+      <div class="mt-3 border-t border-slate-100 pt-3">
         <CartOrderPackNotice compact class="mb-3" />
 
-        <p class="header-cart__total">
+        <p class="mb-3">
           Итого: <strong>{{ cart.totalPrice.toLocaleString('ru-RU') }} ₽</strong>
         </p>
         <RouterLink
           :to="cart.canCheckout ? '/checkout' : '/cart'"
-          class="btn header-cart__checkout"
+          class="btn flex w-full"
           @click.stop
         >
           {{ cart.canCheckout ? 'К оформлению' : 'Добрать в корзине' }}
@@ -73,158 +89,3 @@ const cart = useCartStore()
     </div>
   </div>
 </template>
-
-<style scoped>
-.header-cart {
-  position: relative;
-}
-
-.header-cart__link {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 25px;
-  height: 25px;
-  color: inherit;
-}
-
-@media (max-width: 992px) {
-  .header-cart__link {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.header-cart__badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 0.7rem;
-  line-height: 18px;
-  text-align: center;
-}
-
-.header-cart__bridge {
-  display: none;
-  position: absolute;
-  top: -0.35rem;
-  right: 0;
-  z-index: 1;
-  width: min(360px, calc(100vw - 2rem));
-  height: calc(100% + 1rem);
-}
-
-.header-cart__preview {
-  display: none;
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  width: min(360px, calc(100vw - 2rem));
-  padding: 0.75rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-  z-index: 120;
-}
-
-.header-cart--has-items:hover .header-cart__bridge,
-.header-cart--has-items:hover .header-cart__preview,
-.header-cart__preview:hover {
-  display: block;
-}
-
-.header-cart__title {
-  margin: 0 0 0.75rem;
-  font-weight: 600;
-}
-
-.header-cart__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.header-cart__item {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.65rem 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.header-cart__item:last-child {
-  border-bottom: none;
-}
-
-.header-cart__item-info {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.header-cart__item-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-cart__item-price {
-  flex-shrink: 0;
-  font-weight: 600;
-}
-
-.header-cart__item-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.header-cart__remove {
-  width: 1.75rem;
-  height: 1.75rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: #f1f5f9;
-  cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.header-cart__remove:hover {
-  background: #e2e8f0;
-}
-
-.header-cart__footer {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.header-cart__total {
-  margin: 0 0 0.75rem;
-}
-
-.header-cart__checkout {
-  display: flex;
-  width: 100%;
-}
-
-@media (max-width: 991px) {
-  .header-cart__bridge,
-  .header-cart__preview {
-    display: none !important;
-  }
-}
-</style>

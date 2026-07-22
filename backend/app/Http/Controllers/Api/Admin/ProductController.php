@@ -202,7 +202,7 @@ class ProductController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'compare_at_price' => ['nullable', 'numeric', 'min:0', 'gt:price'],
             'compare_at_markup_percent' => ['nullable', 'numeric', 'min:0', 'max:9999'],
-            'color' => ['required', 'string', 'max:64'],
+            'color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'diameter' => ['required', 'numeric', 'min:0'],
             'weight_grams' => ['required', 'integer', 'min:1'],
             'stock_quantity' => ['sometimes', 'integer', 'min:0'],
@@ -236,7 +236,7 @@ class ProductController extends Controller
             'compare_at_markup_percent' => $request->filled('compare_at_markup_percent')
                 ? $request->input('compare_at_markup_percent')
                 : null,
-            'color' => $request->string('color')->toString(),
+            'color' => $this->normalizeColor($request->string('color')->toString()),
             'diameter' => $request->input('diameter'),
             'weight_grams' => $request->integer('weight_grams'),
             'stock_quantity' => $request->integer('stock_quantity', $product?->stock_quantity ?? 0),
@@ -261,6 +261,11 @@ class ProductController extends Controller
         }
 
         return $slug;
+    }
+
+    private function normalizeColor(string $color): string
+    {
+        return '#'.strtoupper(ltrim(trim($color), '#'));
     }
 
     private function deleteFile(?string $path): void

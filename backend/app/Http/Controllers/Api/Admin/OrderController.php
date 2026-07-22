@@ -33,6 +33,15 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
+    public function newCount(): JsonResponse
+    {
+        $count = Order::query()
+            ->where('status', Order::STATUS_NEW)
+            ->count();
+
+        return response()->json(['data' => ['count' => $count]]);
+    }
+
     public function show(Order $order): JsonResponse
     {
         $order->load(['items', 'client', 'user:id,name,email']);
@@ -56,5 +65,12 @@ class OrderController extends Controller
         $order->update(['status' => $data['status']]);
 
         return response()->json(['data' => $order->fresh(['items', 'client'])]);
+    }
+
+    public function destroy(Order $order): JsonResponse
+    {
+        $order->delete();
+
+        return response()->json(['message' => 'Заказ удалён.']);
     }
 }

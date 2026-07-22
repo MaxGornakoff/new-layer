@@ -25,6 +25,8 @@ class DeliverySettingResource extends JsonResource
             'yandex_delivery_enabled' => (bool) $this->yandex_delivery_enabled,
             'zheldor_enabled' => (bool) $this->zheldor_enabled,
             'cdek_enabled' => (bool) $this->cdek_enabled,
+            'russian_post_enabled' => (bool) $this->russian_post_enabled,
+            'russian_post_object_type' => $this->resolveRussianPostObjectType(),
             'cargo_configured' => $this->hasCargoDimensions(),
             'provider_senders' => $this->normalizedProviderSenders(),
             'credentials' => $this->credentialsMeta(),
@@ -75,6 +77,10 @@ class DeliverySettingResource extends JsonResource
                 'client_secret_set' => filled($this->cdek_client_secret),
                 'client_secret_hint' => DeliverySetting::maskSecret($this->cdek_client_secret),
                 'use_test_api' => (bool) $this->cdek_use_test_api,
+            ],
+            'russian_post' => [
+                'object_type' => $this->resolveRussianPostObjectType(),
+                'public_api' => true,
             ],
         ];
     }

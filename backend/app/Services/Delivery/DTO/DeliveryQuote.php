@@ -13,6 +13,7 @@ readonly class DeliveryQuote
         public ?int $deliveryDaysMax = null,
         public bool $available = true,
         public ?string $message = null,
+        public ?string $postalCode = null,
     ) {}
 
     public function toArray(): array
@@ -26,6 +27,7 @@ readonly class DeliveryQuote
             'delivery_days_max' => $this->deliveryDaysMax,
             'available' => $this->available,
             'message' => $this->message,
+            'postal_code' => $this->postalCode,
         ];
     }
 }

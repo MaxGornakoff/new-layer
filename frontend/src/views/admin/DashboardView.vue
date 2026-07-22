@@ -18,9 +18,18 @@
         <span>Блоки на главной и преимущества</span>
       </RouterLink>
 
-      <RouterLink class="admin-stat-card" to="/admin/orders">
-        <strong>Заказы</strong>
-        <span>Статусы и суммы заказов</span>
+      <RouterLink class="admin-stat-card admin-stat-card--orders" to="/admin/orders">
+        <strong class="admin-orders-title">
+          Заказы
+          <span
+            v-if="adminOrders.hasNew"
+            class="admin-orders-badge"
+            aria-label="Новых заказов"
+          >
+            {{ adminOrders.newCount }}
+          </span>
+        </strong>
+        <span class="admin-stat-card__hint">Статусы и суммы заказов</span>
       </RouterLink>
 
       <RouterLink class="admin-stat-card" to="/admin/clients">
@@ -52,5 +61,37 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAdminOrdersStore } from '@/stores/adminOrders'
+
+const adminOrders = useAdminOrdersStore()
+
+onMounted(() => {
+  adminOrders.refresh()
+})
 </script>
+
+<style scoped>
+.admin-orders-title {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-stat-card--orders .admin-orders-badge {
+  display: inline-flex;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  margin-top: 0;
+  padding: 0 0.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #3b72ff;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+</style>

@@ -1,10 +1,11 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue'
 import api from '@/api/client'
-import { useAuthStore } from '@/stores/auth'
-import { useToastStore } from '@/stores/toast'
 import AppLoader from '@/components/AppLoader.vue'
 import ClientOrdersList from '@/components/ClientOrdersList.vue'
+import { validateForm } from '@/lib/formValidation'
+import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -45,7 +46,9 @@ async function loadOrders() {
   }
 }
 
-async function saveProfile() {
+async function saveProfile(event) {
+  if (!validateForm(event?.target)) return
+
   error.value = ''
   saving.value = true
 
@@ -64,14 +67,14 @@ async function saveProfile() {
     await auth.updateProfile(payload)
     form.password = ''
     form.password_confirmation = ''
-    toast.show('Данные профиля сохранены', 'success')
+    toast.success('Данные профиля сохранены')
   } catch (err) {
     const messages = err.response?.data?.errors
-    if (messages) {
-      error.value = Object.values(messages).flat().join(' ')
-    } else {
-      error.value = err.response?.data?.message || 'Не удалось сохранить профиль.'
-    }
+    const message = messages
+      ? Object.values(messages).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить профиль.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -94,26 +97,27 @@ onMounted(loadOrders)
         <h2 class="m-0 text-lg font-semibold text-[#222222]">Личные данные</h2>
         <p class="muted m-0 mt-1 text-sm">Имя, контакты и пароль.</p>
 
-        <form class="mt-5 grid gap-1" @submit.prevent="saveProfile">
+        <form class="mt-5 grid gap-1" novalidate @submit.prevent="saveProfile">
           <label class="field">
             <span>Имя</span>
-            <input v-model="form.name" type="text" required autocomplete="name" />
+            <input v-model="form.name" name="name" type="text" required autocomplete="name" />
           </label>
 
           <label class="field">
             <span>Email</span>
-            <input v-model="form.email" type="email" required autocomplete="email" />
+            <input v-model="form.email" name="email" type="email" required autocomplete="email" />
           </label>
 
           <label class="field">
             <span>Телефон</span>
-            <input v-model="form.phone" type="tel" autocomplete="tel" />
+            <input v-model="form.phone" name="phone" type="tel" autocomplete="tel" />
           </label>
 
           <label class="field">
             <span>Новый пароль</span>
             <input
               v-model="form.password"
+              name="password"
               type="password"
               autocomplete="new-password"
               placeholder="Оставьте пустым, если не меняете"
@@ -124,6 +128,7 @@ onMounted(loadOrders)
             <span>Повтор пароля</span>
             <input
               v-model="form.password_confirmation"
+              name="password_confirmation"
               type="password"
               autocomplete="new-password"
             />

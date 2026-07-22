@@ -1,7 +1,7 @@
 <script setup>
 import { reactive } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getOrderStatusLabel } from '@/lib/orderStatus'
+import { getOrderStatusLabel, getOrderStatusClass } from '@/lib/orderStatus'
 import { resolveOrderDelivery } from '@/lib/orderDelivery'
 
 defineProps({
@@ -45,19 +45,6 @@ function productRoute(item) {
 
   return { name: 'product', params: { slug } }
 }
-
-function statusClass(status) {
-  const classes = {
-    new: 'bg-sky-100 text-sky-800',
-    confirmed: 'bg-indigo-100 text-indigo-800',
-    processing: 'bg-amber-100 text-amber-900',
-    shipped: 'bg-violet-100 text-violet-800',
-    completed: 'bg-emerald-100 text-emerald-800',
-    cancelled: 'bg-slate-200 text-slate-600',
-  }
-
-  return classes[status] ?? 'bg-slate-100 text-slate-700'
-}
 </script>
 
 <template>
@@ -98,7 +85,7 @@ function statusClass(status) {
               <p class="m-0 text-xs text-muted lg:hidden">Статус</p>
               <span
                 class="mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium lg:mt-0"
-                :class="statusClass(order.status)"
+                :class="getOrderStatusClass(order.status)"
               >
                 {{ getOrderStatusLabel(order.status) }}
               </span>

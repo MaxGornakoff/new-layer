@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
+import { isHexColor, isLightHexColor } from '@/lib/productColor'
 
 const VISIBLE_LIMIT = 5
 
@@ -75,9 +76,11 @@ const filterGroups = computed(() => {
     groups.push({
       key: group.key,
       title: group.title || group.key,
+      display: group.display || 'list',
       options: group.options.map((option) => ({
         value: String(option.value),
         label: option.label ?? String(option.value),
+        hex: option.hex || null,
       })),
     })
   }
@@ -177,23 +180,59 @@ onUnmounted(() => {
       v-for="group in filterGroups"
       :key="group.key"
       class="filter-group"
+      :class="{ 'filter-group--swatches': group.display === 'swatches' || group.key === 'color' }"
     >
       <legend class=" font-semibold text-[16px] pb-2.5">{{ group.title }}</legend>
 
-      <label
-        v-for="option in visibleOptions(group.options, group.key)"
-        :key="option.value"
-        class="filter-option"
+      <div
+        v-if="group.display === 'swatches' || group.key === 'color'"
+        class="color-swatches"
       >
-        <input
-          class="filter-option__input"
-          type="checkbox"
-          :checked="isChecked(group.key, option.value)"
-          @change="toggleValue(group.key, option.value)"
-        />
-        <span class="filter-option__box" aria-hidden="true" />
-        <span class="filter-option__text">{{ option.label }}</span>
-      </label>
+        <label
+          v-for="option in visibleOptions(group.options, group.key)"
+          :key="option.value"
+          class="color-swatch"
+          :class="{ 'color-swatch--active': isChecked(group.key, option.value) }"
+          :title="option.label"
+        >
+          <input
+            class="filter-option__input"
+            type="checkbox"
+            :checked="isChecked(group.key, option.value)"
+            @change="toggleValue(group.key, option.value)"
+          />
+          <span
+            class="color-swatch__circle"
+            :class="{
+              'color-swatch__circle--light': isLightHexColor(option.hex || option.value),
+            }"
+            :style="{
+              backgroundColor: isHexColor(option.hex || option.value)
+                ? (option.hex || option.value)
+                : '#cbd5e1',
+            }"
+            aria-hidden="true"
+          />
+          <span class="sr-only">{{ option.label }}</span>
+        </label>
+      </div>
+
+      <template v-else>
+        <label
+          v-for="option in visibleOptions(group.options, group.key)"
+          :key="option.value"
+          class="filter-option"
+        >
+          <input
+            class="filter-option__input"
+            type="checkbox"
+            :checked="isChecked(group.key, option.value)"
+            @change="toggleValue(group.key, option.value)"
+          />
+          <span class="filter-option__box" aria-hidden="true" />
+          <span class="filter-option__text">{{ option.label }}</span>
+        </label>
+      </template>
 
       <button
         v-if="group.options.length > VISIBLE_LIMIT"
@@ -333,6 +372,56 @@ onUnmounted(() => {
 
 .filter-group__toggle:hover {
   text-decoration: underline;
+}
+
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.color-swatch {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.color-swatch__circle {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.color-swatch__circle--light {
+  border-color: #cbd5e1;
+}
+
+.color-swatch--active .color-swatch__circle,
+.color-swatch:has(.filter-option__input:checked) .color-swatch__circle {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b72ff;
+}
+
+.color-swatch:hover .color-swatch__circle {
+  transform: scale(1.06);
+}
+
+.color-swatch .filter-option__input:focus-visible + .color-swatch__circle {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(59, 114, 255, 0.55);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .actions {

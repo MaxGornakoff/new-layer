@@ -13,7 +13,10 @@ const profileTitle = computed(() => auth.user?.name || 'Войти')
 
 const cabinetLinks = computed(() => {
   if (!auth.isAuthenticated) {
-    return [{ to: '/register', label: 'Регистрация' }]
+    return [
+      { to: '/login', label: 'Войти' },
+      { to: '/register', label: 'Регистрация' },
+    ]
   }
 
   const links = [
@@ -48,17 +51,15 @@ async function logout() {
     <span class="header-profile__bridge" aria-hidden="true" />
 
     <div class="header-profile__preview">
-      <p class="header-profile__title">
+      <p v-if="auth.isAuthenticated" class="header-profile__title">
         <RouterLink
-          v-if="auth.isAuthenticated"
+          
           :to="profileLink"
           class="header-profile__title-link"
         >
           {{ profileTitle }}
         </RouterLink>
-        <RouterLink v-else :to="profileLink" class="header-profile__title-link">
-          Войти
-        </RouterLink>
+      
       </p>
 
       <nav class="header-profile__nav" aria-label="Меню профиля">
@@ -130,6 +131,7 @@ async function logout() {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
   font-weight: 600;
+  padding-left: 10px;
 }
 
 .header-profile__title-link {
@@ -139,6 +141,11 @@ async function logout() {
 
 .header-profile__title-link:hover {
   color: #2563eb;
+}
+
+.header-profile__title-text {
+  display: block;
+  color: inherit;
 }
 
 .header-profile__menu {

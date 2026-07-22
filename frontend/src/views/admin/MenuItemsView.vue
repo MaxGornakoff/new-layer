@@ -1,10 +1,14 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import AppLoader from '@/components/AppLoader.vue'
 import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
 import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const sections = ref([])
 const items = ref([])
 const loading = ref(true)
@@ -138,7 +142,9 @@ async function load() {
   }
 }
 
-async function saveSection() {
+async function saveSection(event) {
+  if (!validateForm(event?.target)) return
+
   savingSection.value = true
   sectionError.value = ''
 
@@ -153,11 +159,11 @@ async function saveSection() {
     await load()
   } catch (err) {
     const validationErrors = err.response?.data?.errors
-    if (validationErrors) {
-      sectionError.value = Object.values(validationErrors).flat().join(' ')
-    } else {
-      sectionError.value = err.response?.data?.message || 'Не удалось сохранить раздел.'
-    }
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить раздел.'
+    sectionError.value = message
+    toast.error(message)
   } finally {
     savingSection.value = false
   }
@@ -171,11 +177,13 @@ async function removeSection(section) {
     if (editingSectionId.value === section.id) resetSectionForm()
     await load()
   } catch (err) {
-    alert(err.response?.data?.message || 'Не удалось удалить раздел.')
+    toast.error(err.response?.data?.message || 'Не удалось удалить раздел.')
   }
 }
 
-async function saveItem() {
+async function saveItem(event) {
+  if (!validateForm(event?.target)) return
+
   savingItem.value = true
   itemError.value = ''
 
@@ -190,11 +198,11 @@ async function saveItem() {
     await load()
   } catch (err) {
     const validationErrors = err.response?.data?.errors
-    if (validationErrors) {
-      itemError.value = Object.values(validationErrors).flat().join(' ')
-    } else {
-      itemError.value = err.response?.data?.message || 'Не удалось сохранить подпункт.'
-    }
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить подпункт.'
+    itemError.value = message
+    toast.error(message)
   } finally {
     savingItem.value = false
   }
@@ -208,7 +216,7 @@ async function removeItem(item) {
     if (editingItemId.value === item.id) resetItemForm()
     await load()
   } catch (err) {
-    alert(err.response?.data?.message || 'Не удалось удалить подпункт.')
+    toast.error(err.response?.data?.message || 'Не удалось удалить подпункт.')
   }
 }
 
@@ -248,6 +256,7 @@ onMounted(load)
         'admin-form--editing': editingSectionId,
         'admin-form--creating': sectionFormOpen && !editingSectionId,
       }"
+      novalidate
       @submit.prevent="saveSection"
     >
       <header class="admin-form__header">
@@ -347,6 +356,7 @@ onMounted(load)
         'admin-form--editing': editingItemId,
         'admin-form--creating': itemFormOpen && !editingItemId,
       }"
+      novalidate
       @submit.prevent="saveItem"
     >
       <header class="admin-form__header">
@@ -432,17 +442,18 @@ onMounted(load)
                 </span>
               </div>
               <div class="menu-section__actions">
-                <button
-                  class="btn"
-                  :class="editingSectionId === section.id ? '' : 'secondary'"
-                  type="button"
+                <AdminIconButton
+                  icon="pencil"
+                  :label="editingSectionId === section.id ? 'Редактируется' : 'Изменить'"
+                  :active="editingSectionId === section.id"
                   @click="startEditSection(section)"
-                >
-                  {{ editingSectionId === section.id ? 'Редактируется' : 'Изменить' }}
-                </button>
-                <button class="btn secondary" type="button" @click="removeSection(section)">
-                  Удалить
-                </button>
+                />
+                <AdminIconButton
+                  icon="trash"
+                  label="Удалить"
+                  variant="danger"
+                  @click="removeSection(section)"
+                />
               </div>
             </header>
 
@@ -455,17 +466,18 @@ onMounted(load)
                 <span>{{ item.title }}</span>
                 <span class="muted">{{ item.url }}</span>
                 <div class="menu-section__item-actions">
-                  <button
-                    class="btn"
-                    :class="editingItemId === item.id ? '' : 'secondary'"
-                    type="button"
+                  <AdminIconButton
+                    icon="pencil"
+                    :label="editingItemId === item.id ? 'Редактируется' : 'Изменить'"
+                    :active="editingItemId === item.id"
                     @click="startEditItem(item)"
-                  >
-                    {{ editingItemId === item.id ? 'Редактируется' : 'Изменить' }}
-                  </button>
-                  <button class="btn secondary" type="button" @click="removeItem(item)">
-                    Удалить
-                  </button>
+                  />
+                  <AdminIconButton
+                    icon="trash"
+                    label="Удалить"
+                    variant="danger"
+                    @click="removeItem(item)"
+                  />
                 </div>
               </li>
             </ul>

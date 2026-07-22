@@ -1,14 +1,18 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const loading = ref(true)
 const saving = ref(false)
 const testingBaikal = ref(false)
 const testingDellin = ref(false)
 const testingYandex = ref(false)
 const testingZheldor = ref(false)
+const testingRussianPost = ref(false)
 const testResult = ref('')
 const error = ref('')
 const success = ref('')
@@ -27,6 +31,8 @@ const form = reactive({
   yandex_delivery_enabled: false,
   zheldor_enabled: false,
   cdek_enabled: false,
+  russian_post_enabled: false,
+  russian_post_object_type: 4030,
   baikal_api_key: '',
   dellin_app_key: '',
   yandex_delivery_oauth_token: '',
@@ -44,6 +50,7 @@ const credentials = ref({
   yandex_delivery: {},
   zheldor: {},
   cdek: {},
+  russian_post: {},
 })
 
 const providerSenders = reactive({
@@ -52,9 +59,10 @@ const providerSenders = reactive({
   yandex_delivery: emptySender(),
   zheldor: emptySender(),
   cdek: emptySender(),
+  russian_post: emptySender(),
 })
 
-const PROVIDER_KEYS = ['baikal', 'dellin', 'yandex_delivery', 'zheldor', 'cdek']
+const PROVIDER_KEYS = ['baikal', 'dellin', 'yandex_delivery', 'zheldor', 'cdek', 'russian_post']
 
 const expandedProviders = reactive(
   Object.fromEntries(PROVIDER_KEYS.map((key) => [key, false])),
@@ -67,14 +75,6 @@ function providerEnabledKey(key) {
 function toggleProvider(key) {
   if (!form[providerEnabledKey(key)]) return
   expandedProviders[key] = !expandedProviders[key]
-}
-
-function syncExpandedProviders() {
-  for (const key of PROVIDER_KEYS) {
-    if (form[providerEnabledKey(key)]) {
-      expandedProviders[key] = true
-    }
-  }
 }
 
 function providerMeta(key) {
@@ -118,6 +118,8 @@ async function load() {
       yandex_delivery_enabled: settings.yandex_delivery_enabled ?? false,
       zheldor_enabled: settings.zheldor_enabled ?? false,
       cdek_enabled: settings.cdek_enabled ?? false,
+      russian_post_enabled: settings.russian_post_enabled ?? false,
+      russian_post_object_type: settings.russian_post_object_type ?? 4030,
       baikal_api_key: '',
       dellin_app_key: '',
       yandex_delivery_oauth_token: '',
@@ -131,7 +133,6 @@ async function load() {
     providers.value = settings.providers ?? []
     credentials.value = settings.credentials ?? credentials.value
     applyProviderSenders(settings.provider_senders)
-    syncExpandedProviders()
   } catch (err) {
     error.value = err.response?.data?.message || 'Не удалось загрузить настройки доставки.'
   } finally {
@@ -139,7 +140,9 @@ async function load() {
   }
 }
 
-async function save() {
+async function save(event) {
+  if (!validateForm(event?.target)) return
+
   saving.value = true
   error.value = ''
   success.value = ''
@@ -165,8 +168,10 @@ async function save() {
     form.zheldor_password = ''
     form.cdek_client_secret = ''
     success.value = 'Настройки доставки сохранены.'
+    toast.success(success.value)
   } catch (err) {
     error.value = err.response?.data?.message || 'Не удалось сохранить настройки доставки.'
+    toast.error(error.value)
   } finally {
     saving.value = false
   }
@@ -243,18 +248,28 @@ async function testZheldor() {
   }
 }
 
-onMounted(load)
+async function testRussianPost() {
+  testingRussianPost.value = true
+  testResult.value = ''
+  error.value = ''
 
-for (const key of PROVIDER_KEYS) {
-  watch(
-    () => form[providerEnabledKey(key)],
-    (enabled) => {
-      if (enabled) {
-        expandedProviders[key] = true
-      }
-    },
-  )
+  try {
+    const { data } = await api.post('/admin/delivery-settings/test/russian-post', {
+      from_postal_code: providerSenders.russian_post.postal_code || form.sender_postal_code || null,
+      to_postal_code: '190000',
+    })
+    testResult.value = data.message
+    if (data.data?.sample_price != null) {
+      testResult.value += ` Пример: ${Number(data.data.sample_price).toLocaleString('ru-RU')} ₽.`
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Не удалось проверить тарификатор Почты России.'
+  } finally {
+    testingRussianPost.value = false
+  }
 }
+
+onMounted(load)
 </script>
 
 <template>
@@ -268,7 +283,7 @@ for (const key of PROVIDER_KEYS) {
 
     <AppLoader v-if="loading" />
 
-    <form v-else class="grid gap-4 admin-form--wide" @submit.prevent="save">
+    <form v-else class="grid gap-4 admin-form--wide" novalidate @submit.prevent="save">
       <div class="card admin-panel">
         <h3 class="admin-card-title">Грузоместо</h3>
 
@@ -659,6 +674,75 @@ for (const key of PROVIDER_KEYS) {
                   <span>Адрес ПВЗ / склада</span>
                   <textarea v-model="providerSenders.cdek.address" rows="2" />
                 </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="provider-card">
+            <div class="provider-header">
+              <button
+                type="button"
+                class="provider-toggle"
+                :class="{ 'provider-toggle--disabled': !form.russian_post_enabled }"
+                :aria-expanded="expandedProviders.russian_post"
+                :disabled="!form.russian_post_enabled"
+                @click="toggleProvider('russian_post')"
+              >
+                <span class="provider-chevron" :class="{ 'provider-chevron--open': expandedProviders.russian_post }" />
+              </button>
+
+              <div class="provider-row">
+                <label class="checkbox admin-checkbox">
+                  <input v-model="form.russian_post_enabled" type="checkbox" />
+                  <span>Почта России</span>
+                </label>
+                <span class="status" :class="providerMeta('russian_post')?.configured ? 'status--ok' : 'status--warn'">
+                  {{ providerMeta('russian_post')?.configured ? 'Индекс отправления задан' : 'Нужен индекс отправления' }}
+                </span>
+              </div>
+            </div>
+
+            <div v-show="form.russian_post_enabled && expandedProviders.russian_post" class="credentials">
+              <p class="admin-field-hint">
+                Публичный тарификатор Почты России (ключи не нужны). Расчёт по индексам отправителя и получателя.
+              </p>
+
+              <label class="field">
+                <span>Тип отправления (код РТМ)</span>
+                <input v-model.number="form.russian_post_object_type" type="number" min="1" step="1" />
+                <span class="admin-field-hint">По умолчанию 4030 — «Посылка». 47030 — «Посылка 1 класса».</span>
+              </label>
+
+              <div class="sender-block">
+                <p class="sender-title">Пункт отправления</p>
+                <label class="field">
+                  <span>Город</span>
+                  <input v-model="providerSenders.russian_post.city" type="text" placeholder="Москва" />
+                </label>
+                <label class="field">
+                  <span>Индекс</span>
+                  <input
+                    v-model="providerSenders.russian_post.postal_code"
+                    type="text"
+                    placeholder="101000"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Адрес отделения / склада</span>
+                  <textarea v-model="providerSenders.russian_post.address" rows="2" />
+                </label>
+              </div>
+
+              <div class="provider-test">
+                <button
+                  class="btn secondary"
+                  type="button"
+                  :disabled="testingRussianPost || !form.russian_post_enabled"
+                  @click="testRussianPost"
+                >
+                  {{ testingRussianPost ? 'Проверка...' : 'Проверить расчёт' }}
+                </button>
               </div>
             </div>
           </section>

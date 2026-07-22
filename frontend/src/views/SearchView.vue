@@ -33,15 +33,34 @@ onMounted(loadProducts)
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-[1440px]">
-    <h1 class="my-6 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl" v-if="searchQuery">Результаты поиска: «{{ searchQuery }}»</h1>
-    <h1 class="my-6 text-2xl font-semibold uppercase sm:text-[28px] lg:text-3xl" v-else>Поиск</h1>
+  <section class="search-page mx-auto w-full max-w-[1440px]">
+    <header class="my-6 sm:my-8 lg:my-10">
+      <h1
+        class="m-0 break-words text-2xl font-semibold uppercase leading-tight sm:text-[28px] lg:text-3xl"
+      >
+        <template v-if="searchQuery">Результаты поиска: «{{ searchQuery }}»</template>
+        <template v-else>Поиск</template>
+      </h1>
+      <p
+        v-if="searchQuery && !loading"
+        class="muted m-0 mt-2 text-sm sm:text-base"
+      >
+        Найдено: {{ products.length }}
+      </p>
+    </header>
 
-    <p v-if="!searchQuery" class="muted">Введите запрос в строке поиска в шапке сайта.</p>
+    <p v-if="!searchQuery" class="muted text-[15px] sm:text-base">
+      Введите запрос в строке поиска в шапке сайта.
+    </p>
     <AppLoader v-else-if="loading" />
-    <p v-else-if="!products.length" class="muted">По вашему запросу ничего не найдено.</p>
+    <p v-else-if="!products.length" class="muted text-[15px] sm:text-base">
+      По вашему запросу ничего не найдено.
+    </p>
 
-    <div v-if="!loading && products.length" class="grid products">
+    <div
+      v-if="!loading && products.length"
+      class="grid products pb-6 sm:pb-8 lg:pb-10"
+    >
       <ProductCard v-for="product in products" :key="product.id" :product="product" />
     </div>
   </section>

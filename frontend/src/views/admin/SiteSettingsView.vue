@@ -2,8 +2,10 @@
 import { onMounted, ref } from 'vue'
 import api from '@/api/client'
 import { useSiteStore } from '@/stores/site'
+import { useToastStore } from '@/stores/toast'
 
 const site = useSiteStore()
+const toast = useToastStore()
 const saving = ref(false)
 const savingCatalog = ref(false)
 const error = ref('')
@@ -43,8 +45,11 @@ async function saveCatalogSetting() {
     const { data } = await api.post('/admin/site-settings', formData)
     site.setFromAdmin(data.data)
     catalogAutoApplyFilters.value = data.data.catalog_auto_apply_filters ?? true
+    toast.success('Настройка каталога сохранена')
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось сохранить настройку каталога.'
+    const message = err.response?.data?.message || 'Не удалось сохранить настройку каталога.'
+    error.value = message
+    toast.error(message)
   } finally {
     savingCatalog.value = false
   }
@@ -52,7 +57,9 @@ async function saveCatalogSetting() {
 
 async function save() {
   if (!logoFile.value && !faviconFile.value) {
-    error.value = 'Выберите логотип и/или фавикон для загрузки.'
+    const message = 'Выберите логотип и/или фавикон для загрузки.'
+    error.value = message
+    toast.warning(message)
     return
   }
 
@@ -71,8 +78,11 @@ async function save() {
     faviconFile.value = null
     logoPreview.value = null
     faviconPreview.value = null
+    toast.success('Настройки сайта сохранены')
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось сохранить настройки.'
+    const message = err.response?.data?.message || 'Не удалось сохранить настройки.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -90,7 +100,7 @@ onMounted(load)
       </p>
     </header>
 
-    <form class="card admin-form" @submit.prevent="save">
+    <form class="card admin-form" novalidate @submit.prevent="save">
       <header class="admin-form__header">
         <h3>Логотип и фавикон</h3>
         <p class="admin-field-hint">Форматы: SVG или PNG. После загрузки сразу отображаются на сайте.</p>

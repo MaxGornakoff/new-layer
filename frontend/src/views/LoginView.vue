@@ -1,9 +1,12 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { validateForm } from '@/lib/formValidation'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 const router = useRouter()
 const route = useRoute()
 const error = ref('')
@@ -15,54 +18,49 @@ const form = reactive({
 
 const adminHint = computed(() => route.query.redirect?.toString().includes('/admin'))
 
-async function submit() {
+async function submit(event) {
+  if (!validateForm(event?.target)) return
+
   error.value = ''
   try {
     await auth.login(form)
     router.push(route.query.redirect || '/')
   } catch {
-    error.value = 'Неверный email или пароль.'
+    const message = 'Неверный email или пароль.'
+    error.value = message
+    toast.error(message)
   }
 }
 </script>
 
 <template>
-  <section class="card auth">
-    <h1>Вход</h1>
-    <p v-if="adminHint" class="hint">
-      Для админки войдите как <strong>admin@shop.local</strong> / <strong>password</strong>
-    </p>
-    <form @submit.prevent="submit">
-      <label class="field">
-        <span>Email</span>
-        <input v-model="form.email" type="email" required />
-      </label>
-      <label class="field">
-        <span>Пароль</span>
-        <input v-model="form.password" type="password" required />
-      </label>
-      <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn" type="submit" :disabled="auth.loading">Войти</button>
-    </form>
-    <p class="muted">Нет аккаунта? <RouterLink to="/register">Регистрация</RouterLink></p>
+  <section class="auth py-20">
+    <div class="mx-auto max-w-md rounded-[20px] bg-[#ffffff] px-7 py-10">
+      <h1 class="m-0 text-center text-2xl font-semibold uppercase leading-tight sm:text-[28px] lg:text-3xl">
+        Вход
+      </h1>
+      <p
+        v-if="adminHint"
+        class="mb-4 rounded-lg bg-sky-50 p-3 text-[0.9rem] text-blue-800"
+      >
+        Для админки войдите как <strong>admin@shop.local</strong> / <strong>password</strong>
+      </p>
+      <form class="pb-4 pt-6" novalidate @submit.prevent="submit">
+        <label class="field relative mb-5">
+          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Email</span>
+          <input v-model="form.email" name="email" type="email" required />
+        </label>
+        <label class="field relative mb-5">
+          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Пароль</span>
+          <input v-model="form.password" name="password" type="password" required />
+        </label>
+        <p v-if="error" class="m-0 mb-3 text-sm text-red-600">{{ error }}</p>
+        <button class="btn w-full" type="submit" :disabled="auth.loading">Войти</button>
+      </form>
+      <p class="muted text-center text-sm">
+        Нет аккаунта?
+        <RouterLink to="/register" class="text-[#007bff] hover:underline">Регистрация</RouterLink>
+      </p>
+    </div>
   </section>
 </template>
-
-<style scoped>
-.auth {
-  max-width: 420px;
-}
-
-.error {
-  color: #dc2626;
-}
-
-.hint {
-  margin: 0 0 1rem;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  background: #eff6ff;
-  color: #1e40af;
-  font-size: 0.9rem;
-}
-</style>

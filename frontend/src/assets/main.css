@@ -29,11 +29,48 @@
     @apply text-inherit no-underline;
   }
 
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [type='button']:not(:disabled),
+  [type='submit']:not(:disabled),
+  [type='reset']:not(:disabled),
+  [type='checkbox']:not(:disabled),
+  [type='radio']:not(:disabled),
+  [type='file']:not(:disabled),
+  [type='range']:not(:disabled),
+  label:has([type='checkbox']),
+  label:has([type='radio']),
+  label[for] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  [role='button'][aria-disabled='true'],
+  [type='button']:disabled,
+  [type='submit']:disabled,
+  [type='reset']:disabled,
+  [type='checkbox']:disabled,
+  [type='radio']:disabled,
+  [type='file']:disabled {
+    cursor: not-allowed;
+  }
+
   button,
   input,
   select,
   textarea {
     font: inherit;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 1px solid #3b72ff;
+    outline-offset: 0;
   }
 }
 
@@ -41,7 +78,13 @@
 /* Временные компоненты — постепенно заменяйте на утилиты Tailwind в шаблонах */
 @layer components {
   .layout {
-    @apply px-5;
+    padding-inline: 10px;
+  }
+
+  @media (min-width: 992px) {
+    .layout {
+      @apply px-5;
+    }
   }
 
   .box {

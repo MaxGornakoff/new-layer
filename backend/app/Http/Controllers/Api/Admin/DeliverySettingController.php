@@ -7,6 +7,7 @@ use App\Http\Resources\DeliverySettingResource;
 use App\Models\DeliverySetting;
 use App\Services\Delivery\Clients\BaikalApiClient;
 use App\Services\Delivery\Clients\DellinApiClient;
+use App\Services\Delivery\Clients\RussianPostApiClient;
 use App\Services\Delivery\Clients\YandexDeliveryApiClient;
 use App\Services\Delivery\Clients\ZheldorApiClient;
 use App\Services\Delivery\DTO\CargoPackage;
@@ -42,6 +43,8 @@ class DeliverySettingController extends Controller
             'yandex_delivery_enabled' => ['sometimes', 'boolean'],
             'zheldor_enabled' => ['sometimes', 'boolean'],
             'cdek_enabled' => ['sometimes', 'boolean'],
+            'russian_post_enabled' => ['sometimes', 'boolean'],
+            'russian_post_object_type' => ['nullable', 'integer', 'min:1'],
             'baikal_api_key' => ['nullable', 'string', 'max:255'],
             'dellin_app_key' => ['nullable', 'string', 'max:255'],
             'yandex_delivery_oauth_token' => ['nullable', 'string', 'max:255'],
@@ -265,6 +268,41 @@ class DeliverySettingController extends Controller
 
             return response()->json([
                 'message' => 'Подключение к API Желдорэкспедиции успешно. Справочник и калькулятор доступны.',
+                'data' => $connection,
+            ]);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function testRussianPost(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from_postal_code' => ['nullable', 'string', 'max:16'],
+            'to_postal_code' => ['nullable', 'string', 'max:16'],
+        ]);
+
+        $settings = DeliverySetting::current();
+        $sender = $settings->resolveProviderSender('russian_post');
+        $from = $data['from_postal_code'] ?? $sender?->postalCode ?? $settings->sender_postal_code;
+
+        if (blank($from)) {
+            return response()->json([
+                'message' => 'Укажите индекс пункта отправления для Почты России.',
+            ], 422);
+        }
+
+        try {
+            $client = RussianPostApiClient::fromSettings($settings);
+            $connection = $client->testConnection(
+                (string) $from,
+                $data['to_postal_code'] ?? '190000',
+            );
+
+            return response()->json([
+                'message' => 'Тарификатор Почты России отвечает. Тестовый расчёт выполнен.',
                 'data' => $connection,
             ]);
         } catch (\Throwable $exception) {

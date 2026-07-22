@@ -9,6 +9,7 @@ use App\Services\Delivery\DTO\DeliveryQuoteRequest;
 use App\Services\Delivery\Providers\BaikalDeliveryProvider;
 use App\Services\Delivery\Providers\CdekDeliveryProvider;
 use App\Services\Delivery\Providers\DellinDeliveryProvider;
+use App\Services\Delivery\Providers\RussianPostDeliveryProvider;
 use App\Services\Delivery\Providers\YandexDeliveryProvider;
 use App\Services\Delivery\Providers\ZheldorDeliveryProvider;
 use InvalidArgumentException;
@@ -119,6 +120,7 @@ class DeliveryCalculator
             new YandexDeliveryProvider($this->settings),
             new ZheldorDeliveryProvider($this->settings),
             new CdekDeliveryProvider($this->settings),
+            new RussianPostDeliveryProvider($this->settings),
         ];
     }
 }

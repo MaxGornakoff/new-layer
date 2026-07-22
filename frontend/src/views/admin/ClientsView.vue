@@ -1,10 +1,14 @@
 <script setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import AppLoader from '@/components/AppLoader.vue'
 import AdminFormBanner from '@/components/AdminFormBanner.vue'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppLoader from '@/components/AppLoader.vue'
+import { validateForm } from '@/lib/formValidation'
 import { scrollAdminFormIntoView } from '@/lib/scrollAdminForm'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const clients = ref([])
 const loading = ref(true)
 const saving = ref(false)
@@ -62,7 +66,9 @@ async function load() {
   }
 }
 
-async function saveClient() {
+async function saveClient(event) {
+  if (!validateForm(event?.target)) return
+
   saving.value = true
   error.value = ''
 
@@ -77,11 +83,11 @@ async function saveClient() {
     await load()
   } catch (err) {
     const validationErrors = err.response?.data?.errors
-    if (validationErrors) {
-      error.value = Object.values(validationErrors).flat().join(' ')
-    } else {
-      error.value = err.response?.data?.message || 'Не удалось сохранить контрагента.'
-    }
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить контрагента.'
+    error.value = message
+    toast.error(message)
   } finally {
     saving.value = false
   }
@@ -95,7 +101,7 @@ async function removeClient(client) {
     if (editingId.value === client.id) resetForm()
     await load()
   } catch (err) {
-    alert(err.response?.data?.message || 'Не удалось удалить контрагента.')
+    toast.error(err.response?.data?.message || 'Не удалось удалить контрагента.')
   }
 }
 
@@ -131,6 +137,7 @@ onMounted(load)
         'admin-form--editing': editingId,
         'admin-form--creating': formOpen && !editingId,
       }"
+      novalidate
       @submit.prevent="saveClient"
     >
       <header class="admin-form__header">
@@ -218,17 +225,18 @@ onMounted(load)
                 <td>{{ client.phone || '—' }}</td>
                 <td>{{ client.email || '—' }}</td>
                 <td class="row-actions">
-                  <button
-                    class="btn"
-                    :class="editingId === client.id ? '' : 'secondary'"
-                    type="button"
+                  <AdminIconButton
+                    icon="pencil"
+                    :label="editingId === client.id ? 'Редактируется' : 'Изменить'"
+                    :active="editingId === client.id"
                     @click="startEdit(client)"
-                  >
-                    {{ editingId === client.id ? 'Редактируется' : 'Изменить' }}
-                  </button>
-                  <button class="btn secondary" type="button" @click="removeClient(client)">
-                    Удалить
-                  </button>
+                  />
+                  <AdminIconButton
+                    icon="trash"
+                    label="Удалить"
+                    variant="danger"
+                    @click="removeClient(client)"
+                  />
                 </td>
               </tr>
             </tbody>

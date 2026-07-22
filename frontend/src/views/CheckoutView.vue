@@ -2,16 +2,20 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { useAuthStore } from '@/stores/auth'
-import { useCartStore } from '@/stores/cart'
 import CartOrderPackNotice from '@/components/CartOrderPackNotice.vue'
 import CheckoutDeliverySection from '@/components/CheckoutDeliverySection.vue'
+import { validateForm } from '@/lib/formValidation'
+import { useAuthStore } from '@/stores/auth'
+import { useCartStore } from '@/stores/cart'
+import { useToastStore } from '@/stores/toast'
 
 const auth = useAuthStore()
 const cart = useCartStore()
+const toast = useToastStore()
 const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const deliverySection = ref(null)
 const delivery = ref({
   ready: false,
   quote: null,
@@ -36,8 +40,16 @@ function onDeliveryUpdate(value) {
   delivery.value = value
 }
 
-async function submit() {
-  if (!canSubmit.value) return
+async function submit(event) {
+  if (!validateForm(event?.target)) return
+
+  if (!canSubmit.value) {
+    toast.warning('Выберите способ доставки и пункт выдачи, чтобы оформить заказ', {
+      anchor: deliverySection.value,
+      duration: 4200,
+    })
+    return
+  }
 
   loading.value = true
   error.value = ''
@@ -52,7 +64,9 @@ async function submit() {
     cart.clear()
     router.push({ name: 'profile' })
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось оформить заказ.'
+    const message = err.response?.data?.message || 'Не удалось оформить заказ.'
+    error.value = message
+    toast.error(message)
   } finally {
     loading.value = false
   }
@@ -74,34 +88,36 @@ async function submit() {
 
     <CartOrderPackNotice v-if="cart.items.length" show-catalog-link class="mb-4" />
 
-    <form class="grid min-w-0 gap-4 lg:grid-cols-2 lg:items-start" @submit.prevent="submit">
+    <form class="grid min-w-0 gap-4 lg:grid-cols-2 lg:items-start" novalidate @submit.prevent="submit">
       <div class="card grid min-w-0 gap-4 self-start lg:row-span-2">
         <h3 class="m-0 text-lg font-semibold">Контактные данные</h3>
 
         <label class="field">
           <span>Имя</span>
-          <input v-model="form.customer_name" required />
+          <input v-model="form.customer_name" name="customer_name" required />
         </label>
         <label class="field">
           <span>Телефон</span>
-          <input v-model="form.customer_phone" required />
+          <input v-model="form.customer_phone" name="customer_phone" required />
         </label>
         <label class="field">
           <span>Email</span>
-          <input v-model="form.customer_email" type="email" />
+          <input v-model="form.customer_email" name="customer_email" type="email" />
         </label>
         <label class="field">
           <span>Комментарий</span>
-          <textarea v-model="form.comment" rows="2" />
+          <textarea v-model="form.comment" name="comment" rows="2" />
         </label>
       </div>
 
-      <CheckoutDeliverySection
-        v-if="cart.items.length"
-        :total-quantity="cart.totalItems"
-        :can-calculate="cart.canCheckout"
-        @update:delivery="onDeliveryUpdate"
-      />
+      <div ref="deliverySection" class="min-w-0">
+        <CheckoutDeliverySection
+          v-if="cart.items.length"
+          :total-quantity="cart.totalItems"
+          :can-calculate="cart.canCheckout"
+          @update:delivery="onDeliveryUpdate"
+        />
+      </div>
 
       <div class="card grid min-w-0 gap-4 self-start">
         <div class="grid gap-1.5">
@@ -113,7 +129,7 @@ async function submit() {
           <p><strong>Итого: {{ orderTotal.toLocaleString('ru-RU') }} ₽</strong></p>
         </div>
 
-        <p v-if="error" class="error">{{ error }}</p>
+        <p v-if="error" class="m-0 text-sm text-red-600">{{ error }}</p>
 
         <button class="btn" type="submit" :disabled="loading || !canSubmit">
           {{
@@ -130,9 +146,3 @@ async function submit() {
     </form>
   </section>
 </template>
-
-<style scoped>
-.error {
-  color: #dc2626;
-}
-</style>

@@ -34,5 +34,11 @@ return [
             'client_secret' => env('CDEK_CLIENT_SECRET'),
             'api_base_url' => env('CDEK_API_BASE_URL', 'https://api.cdek.ru/v2'),
         ],
+        'russian_post' => [
+            'name' => 'Почта России',
+            'api_base_url' => env('RUSSIAN_POST_API_BASE_URL', 'https://tariff.pochta.ru'),
+            // 4030 — «Посылка» (нестандартная), удобна для катушек без обязательной упаковки РТМ
+            'object_type' => (int) env('RUSSIAN_POST_OBJECT_TYPE', 4030),
+        ],
     ],
 ];

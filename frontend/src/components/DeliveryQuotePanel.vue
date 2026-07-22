@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
+import { useToastStore } from '@/stores/toast'
 
 const props = defineProps({
   totalQuantity: {
@@ -15,9 +16,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select'])
+const toast = useToastStore()
 
 const destinationCity = ref('')
 const destinationPostalCode = ref('')
+const cityInput = ref(null)
 const loading = ref(false)
 const error = ref('')
 const result = ref(null)
@@ -31,7 +34,19 @@ const availableQuotes = computed(() =>
 )
 
 async function calculate() {
-  if (!props.canCalculate || !destinationCity.value.trim()) return
+  if (!props.canCalculate) {
+    toast.warning('Добавьте товары в корзину, чтобы рассчитать доставку')
+    return
+  }
+
+  if (!destinationCity.value.trim()) {
+    toast.warning('Укажите город получателя', {
+      anchor: cityInput.value,
+      duration: 3800,
+    })
+    cityInput.value?.focus()
+    return
+  }
 
   loading.value = true
   error.value = ''
@@ -51,7 +66,9 @@ async function calculate() {
       selectQuote(availableQuotes.value[0])
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Не удалось рассчитать доставку.'
+    const message = err.response?.data?.message || 'Не удалось рассчитать доставку.'
+    error.value = message
+    toast.error(message)
   } finally {
     loading.value = false
   }
@@ -102,7 +119,12 @@ watch(
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="field">
         <span>Город получателя</span>
-        <input v-model="destinationCity" type="text" placeholder="Санкт-Петербург" required />
+        <input
+          ref="cityInput"
+          v-model="destinationCity"
+          type="text"
+          placeholder="Санкт-Петербург"
+        />
       </label>
       <label class="field">
         <span>Индекс</span>
@@ -113,7 +135,7 @@ watch(
     <button
       class="btn secondary"
       type="button"
-      :disabled="loading || !canCalculate || !destinationCity.trim()"
+      :disabled="loading"
       @click="calculate"
     >
       {{ loading ? 'Расчёт...' : 'Рассчитать доставку' }}
