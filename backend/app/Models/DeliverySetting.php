@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Services\Delivery\DTO\ProviderSenderPoint;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 class DeliverySetting extends Model
 {
@@ -121,7 +123,7 @@ class DeliverySetting extends Model
 
     public function resolveCdekClientSecret(): ?string
     {
-        return $this->cdek_client_secret ?: config('delivery.providers.cdek.client_secret');
+        return $this->safeEncrypted('cdek_client_secret') ?: config('delivery.providers.cdek.client_secret');
     }
 
     public function resolveCdekApiBaseUrl(): string
@@ -151,7 +153,7 @@ class DeliverySetting extends Model
 
     public function resolveBaikalApiKey(): ?string
     {
-        return $this->baikal_api_key ?: config('delivery.providers.baikal.api_key');
+        return $this->safeEncrypted('baikal_api_key') ?: config('delivery.providers.baikal.api_key');
     }
 
     public function resolveBaikalApiBaseUrl(): string
@@ -165,7 +167,7 @@ class DeliverySetting extends Model
 
     public function resolveDellinAppKey(): ?string
     {
-        return $this->dellin_app_key ?: config('delivery.providers.dellin.app_key');
+        return $this->safeEncrypted('dellin_app_key') ?: config('delivery.providers.dellin.app_key');
     }
 
     public function resolveDellinApiBaseUrl(): string
@@ -180,7 +182,7 @@ class DeliverySetting extends Model
 
     public function resolveZheldorPassword(): ?string
     {
-        return $this->zheldor_password ?: config('delivery.providers.zheldor.password');
+        return $this->safeEncrypted('zheldor_password') ?: config('delivery.providers.zheldor.password');
     }
 
     public function resolveZheldorApiBaseUrl(): string
@@ -204,12 +206,29 @@ class DeliverySetting extends Model
 
     public function resolvePekApiKey(): ?string
     {
-        return $this->pek_api_key ?: config('delivery.providers.pek.api_key');
+        return $this->safeEncrypted('pek_api_key') ?: config('delivery.providers.pek.api_key');
     }
 
     public function resolveYandexDeliveryToken(): ?string
     {
-        return $this->yandex_delivery_oauth_token ?: config('delivery.providers.yandex_delivery.oauth_token');
+        return $this->safeEncrypted('yandex_delivery_oauth_token')
+            ?: config('delivery.providers.yandex_delivery.oauth_token');
+    }
+
+    /**
+     * Encrypted columns from another APP_KEY (e.g. DB dump) must not crash checkout.
+     */
+    private function safeEncrypted(string $attribute): ?string
+    {
+        try {
+            $value = $this->getAttribute($attribute);
+        } catch (DecryptException) {
+            return null;
+        } catch (Throwable) {
+            return null;
+        }
+
+        return filled($value) ? (string) $value : null;
     }
 
     public function resolveProviderSender(string $provider): ?ProviderSenderPoint
@@ -268,5 +287,15 @@ class DeliverySetting extends Model
         }
 
         return str_repeat('•', max(8, $length - 4)).mb_substr($value, -4);
+    }
+
+    public function safeMaskedSecret(string $attribute): ?string
+    {
+        return self::maskSecret($this->safeEncrypted($attribute));
+    }
+
+    public function hasUsableEncryptedSecret(string $attribute): bool
+    {
+        return filled($this->safeEncrypted($attribute));
     }
 }

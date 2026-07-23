@@ -33,7 +33,7 @@ onMounted(async () => {
 
   const [categoriesResponse, menuResponse] = await Promise.all([
     api.get('/categories'),
-    api.get('/menu'),
+    api.get('/menu', { params: { placement: 'header' } }),
   ])
 
   categories.value = categoriesResponse.data.data
@@ -136,7 +136,7 @@ function onKeydown(event) {
           alt="Filament Shop"
           class="site-header__logo-image"
         />
-        <span v-else>Filament Shop</span>
+        <span v-else>Новый слой</span>
       </RouterLink>
 
       <nav class="site-header__nav" aria-label="Основное меню">

@@ -1,6 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
+import AdminIconButton from '@/components/AdminIconButton.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { useSiteStore } from '@/stores/site'
 import { useToastStore } from '@/stores/toast'
 
@@ -8,6 +10,7 @@ const site = useSiteStore()
 const toast = useToastStore()
 const saving = ref(false)
 const savingCatalog = ref(false)
+const savingContacts = ref(false)
 const error = ref('')
 
 const logoFile = ref(null)
@@ -15,6 +18,19 @@ const faviconFile = ref(null)
 const logoPreview = ref(null)
 const faviconPreview = ref(null)
 const catalogAutoApplyFilters = ref(true)
+
+const contactsForm = reactive({
+  contact_phone: '',
+  contact_email_business: '',
+  contact_email_support: '',
+  messengers: [],
+})
+
+const messengerIconOptions = [
+  { value: 'telegram', label: 'telegram' },
+  { value: 'max', label: 'max' },
+  { value: 'vk', label: 'vk' },
+]
 
 function onLogoChange(event) {
   const file = event.target.files?.[0] ?? null
@@ -28,10 +44,36 @@ function onFaviconChange(event) {
   faviconPreview.value = file ? URL.createObjectURL(file) : null
 }
 
+function applyContactsFromSettings(settings) {
+  contactsForm.contact_phone = settings.contact_phone || ''
+  contactsForm.contact_email_business = settings.contact_email_business || ''
+  contactsForm.contact_email_support = settings.contact_email_support || ''
+  contactsForm.messengers = Array.isArray(settings.contact_messengers)
+    ? settings.contact_messengers.map((item) => ({
+        label: item.label || '',
+        icon: item.icon || 'telegram',
+        url: item.url || '',
+      }))
+    : []
+}
+
+function addMessenger() {
+  contactsForm.messengers.push({
+    label: '',
+    icon: 'telegram',
+    url: '',
+  })
+}
+
+function removeMessenger(index) {
+  contactsForm.messengers.splice(index, 1)
+}
+
 async function load() {
   const { data } = await api.get('/admin/site-settings')
   site.setFromAdmin(data.data)
   catalogAutoApplyFilters.value = data.data.catalog_auto_apply_filters ?? true
+  applyContactsFromSettings(data.data)
 }
 
 async function saveCatalogSetting() {
@@ -52,6 +94,42 @@ async function saveCatalogSetting() {
     toast.error(message)
   } finally {
     savingCatalog.value = false
+  }
+}
+
+async function saveContacts() {
+  savingContacts.value = true
+  error.value = ''
+
+  try {
+    const formData = new FormData()
+    formData.append('contact_phone', contactsForm.contact_phone.trim())
+    formData.append('contact_email_business', contactsForm.contact_email_business.trim())
+    formData.append('contact_email_support', contactsForm.contact_email_support.trim())
+    formData.append(
+      'contact_messengers',
+      JSON.stringify(
+        contactsForm.messengers.map((item) => ({
+          label: item.label.trim(),
+          icon: item.icon.trim(),
+          url: item.url.trim(),
+        })),
+      ),
+    )
+
+    const { data } = await api.post('/admin/site-settings', formData)
+    site.setFromAdmin(data.data)
+    applyContactsFromSettings(data.data)
+    toast.success('Контакты футера сохранены')
+  } catch (err) {
+    const validationErrors = err.response?.data?.errors
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(' ')
+      : err.response?.data?.message || 'Не удалось сохранить контакты.'
+    error.value = message
+    toast.error(message)
+  } finally {
+    savingContacts.value = false
   }
 }
 
@@ -96,7 +174,7 @@ onMounted(load)
     <header class="admin-page__header">
       <h1>Настройки сайта</h1>
       <p class="admin-page__lead">
-        Брендинг и поведение каталога на витрине.
+        Брендинг, контакты футера и поведение каталога на витрине.
       </p>
     </header>
 
@@ -139,6 +217,111 @@ onMounted(load)
       </div>
     </form>
 
+    <form class="card admin-form" novalidate @submit.prevent="saveContacts">
+      <header class="admin-form__header">
+        <h3>Контакты в футере</h3>
+        <p class="admin-field-hint">
+          Телефон, почта и мессенджеры. Иконка — id из sprite без префикса
+          <code>icon-</code> (например <code>telegram</code>, <code>max</code>, <code>vk</code>).
+        </p>
+      </header>
+
+      <fieldset class="admin-form__section">
+        <legend class="admin-form__section-title">Телефон и email</legend>
+
+        <label class="field">
+          <span>Телефон</span>
+          <input v-model="contactsForm.contact_phone" type="text" placeholder="+7 (999) 123-45-67" />
+        </label>
+
+        <label class="field">
+          <span>Email для юрлиц</span>
+          <input
+            v-model="contactsForm.contact_email_business"
+            type="email"
+            placeholder="opt@site.ru"
+          />
+        </label>
+
+        <label class="field">
+          <span>Email поддержки</span>
+          <input
+            v-model="contactsForm.contact_email_support"
+            type="email"
+            placeholder="help@site.ru"
+          />
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__section admin-form__section--last">
+        <legend class="admin-form__section-title">Мессенджеры</legend>
+
+        <div v-if="contactsForm.messengers.length" class="messenger-list">
+          <div
+            v-for="(messenger, index) in contactsForm.messengers"
+            :key="index"
+            class="messenger-row"
+          >
+            <label class="field">
+              <span>Название</span>
+              <input v-model="messenger.label" type="text" placeholder="Telegram" required />
+            </label>
+
+            <label class="field">
+              <span>Иконка (id)</span>
+              <input
+                v-model="messenger.icon"
+                type="text"
+                list="messenger-icon-options"
+                placeholder="telegram"
+                required
+                pattern="[a-z0-9_-]+"
+              />
+            </label>
+
+            <label class="field">
+              <span>Ссылка</span>
+              <input
+                v-model="messenger.url"
+                type="url"
+                placeholder="https://t.me/..."
+                required
+              />
+            </label>
+
+            <div class="messenger-row__preview">
+              <span class="messenger-row__icon" :title="messenger.icon || 'icon'">
+                <AppIcon v-if="messenger.icon" :name="messenger.icon" :size="18" />
+              </span>
+              <AdminIconButton
+                icon="trash"
+                label="Удалить"
+                variant="danger"
+                @click="removeMessenger(index)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <p v-else class="admin-field-hint">Мессенджеры ещё не добавлены.</p>
+
+        <datalist id="messenger-icon-options">
+          <option v-for="option in messengerIconOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </datalist>
+
+        <div class="admin-actions">
+          <button class="btn secondary" type="button" @click="addMessenger">
+            Добавить мессенджер
+          </button>
+          <button class="btn" type="submit" :disabled="savingContacts">
+            {{ savingContacts ? 'Сохранение...' : 'Сохранить контакты' }}
+          </button>
+        </div>
+      </fieldset>
+    </form>
+
     <div class="card admin-form">
       <header class="admin-form__header">
         <h3>Каталог</h3>
@@ -178,5 +361,46 @@ onMounted(load)
   width: 48px;
   height: 48px;
   object-fit: contain;
+}
+
+.messenger-list {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.messenger-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.messenger-row__preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.15rem;
+}
+
+.messenger-row__icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #222222;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .messenger-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

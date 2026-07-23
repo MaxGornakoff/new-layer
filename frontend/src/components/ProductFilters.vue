@@ -172,7 +172,7 @@ onUnmounted(() => {
 <template>
   <form class="filters card rounded-[16px] border-0 bg-white p-4 sm:rounded-[20px] sm:p-6 lg:p-7" @submit.prevent="apply">
     <label class="m-0 field">
-      <span class="font-semibold">Поиск</span>
+      <span>Поиск</span>
       <input v-model="local.search" type="search" placeholder="Название, артикул..." />
     </label>
 

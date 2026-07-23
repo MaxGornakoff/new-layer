@@ -103,11 +103,22 @@ npm run build
 
 ## Деплой на хостинг
 
-1. Собрать фронт: `npm run build` в `frontend/`
-2. Залить `backend/` на сервер (включая `vendor/`, если нет Composer)
-3. Document root → `backend/public`
-4. Настроить `.env` (MySQL, `APP_URL`, `APP_DEBUG=false`)
-5. Выполнить `php artisan migrate --seed` и `php artisan storage:link`
+Полная инструкция (IHC / ISPmanager, медиа, UTF-8, цикл обновлений): **[DEPLOY.md](./DEPLOY.md)**.
+
+Кратко:
+
+1. `cd frontend && npm run build` → статика в `backend/public`
+2. Залить код на сервер **без** перезаписи прод-`.env` и `storage/app/public`
+3. `/opt/alt/php83/usr/bin/php artisan migrate --force` и `config:clear`
+4. На IHC (document root = корень Laravel): в `.env` — `FILESYSTEM_PUBLIC_PATH=/storage/app/public`
+
+### Параллельно с наполнением сайта клиентом
+
+- **Да:** клиент заполняет товары/категории/картинки на проде; вы пишете код локально и потом деплоите PHP/Vue + **миграции**. Данные клиента не трогаются, если не заливать дамп БД и не затирать `storage/app/public`.
+- **Да:** обычный цикл — локальная разработка → `npm run build` → залить файлы → `migrate --force`. Как раньше, только без повторного импорта локальной БД на прод.
+- **Нет:** повторный `mysqldump` с локалки на прод — это затрёт контент клиента.
+
+Прод = источник правды по контенту. Локально = код и схема (миграции).
 
 ## Текущий фокус и отложенные задачи
 

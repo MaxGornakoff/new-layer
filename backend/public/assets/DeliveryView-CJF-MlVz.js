@@ -1,1 +1,0 @@
-import{T as e,s as t,u as n}from"./runtime-core.esm-bundler-Bjzc5yQf.js";import{a as r}from"./index-sQaG61Kg.js";var i={},a={class:`page-placeholder`};function o(r,i){return e(),n(`section`,a,[...i[0]||=[t(`h1`,null,`Доставка и оплата`,-1),t(`p`,{class:`muted`},`Страница в разработке.`,-1)]])}var s=r(i,[[`render`,o]]);export{s as default};

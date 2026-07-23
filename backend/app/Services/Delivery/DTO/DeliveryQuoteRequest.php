@@ -16,5 +16,22 @@ readonly class DeliveryQuoteRequest
         public ?string $destinationCityGuid = null,
         public ?string $destinationCityId = null,
         public ?string $destinationTerminalId = null,
+        public ?string $destinationTerminalProvider = null,
     ) {}
+
+    /**
+     * Terminal IDs are provider-specific. Only the owning provider may use them.
+     */
+    public function terminalIdFor(string $provider): ?string
+    {
+        if (
+            blank($this->destinationTerminalId)
+            || blank($this->destinationTerminalProvider)
+            || $this->destinationTerminalProvider !== $provider
+        ) {
+            return null;
+        }
+
+        return $this->destinationTerminalId;
+    }
 }

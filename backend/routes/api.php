@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\DeliverySettingController as AdminDeliverySet
 use App\Http\Controllers\Api\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\Admin\HeroSlideController as AdminHeroSlideController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Api\Admin\FaqItemController as AdminFaqItemController;
 use App\Http\Controllers\Api\Admin\MenuItemController as AdminMenuItemController;
 use App\Http\Controllers\Api\Admin\MenuSectionController as AdminMenuSectionController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\Admin\StockController as AdminStockController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\MenuController;
@@ -27,6 +29,7 @@ Route::get('/health', fn () => response()->json(['status' => 'ok']));
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/site-settings', [SiteSettingController::class, 'show']);
 Route::get('/hero-slides', [HeroSlideController::class, 'index']);
+Route::get('/faq', [FaqController::class, 'index']);
 Route::get('/menu', [MenuController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
 Route::get('/products/filters', [ProductController::class, 'filters']);
@@ -82,6 +85,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('hero-slides', [AdminHeroSlideController::class, 'store']);
         Route::match(['put', 'post'], 'hero-slides/{heroSlide}', [AdminHeroSlideController::class, 'update']);
         Route::delete('hero-slides/{heroSlide}', [AdminHeroSlideController::class, 'destroy']);
+
+        Route::get('faq-items', [AdminFaqItemController::class, 'index']);
+        Route::post('faq-items', [AdminFaqItemController::class, 'store']);
+        Route::put('faq-items/{faqItem}', [AdminFaqItemController::class, 'update']);
+        Route::delete('faq-items/{faqItem}', [AdminFaqItemController::class, 'destroy']);
 
         Route::get('site-settings', [AdminSiteSettingController::class, 'show']);
         Route::post('site-settings', [AdminSiteSettingController::class, 'update']);

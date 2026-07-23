@@ -26,6 +26,7 @@ const itemFormRef = ref(null)
 
 const sectionForm = reactive({
   key: '',
+  placement: 'header',
   title: '',
   url: '',
   type: 'link',
@@ -40,26 +41,58 @@ const itemForm = reactive({
   title: '',
   url: '',
   sort_order: 0,
+  is_active: true,
   open_in_new_tab: false,
 })
 
-const typeLabels = {
-  link: 'Ссылка',
-  dropdown: 'Выпадающий список',
+const typeLabelsByPlacement = {
+  header: {
+    link: 'Ссылка',
+    dropdown: 'Выпадающий список',
+  },
+  footer: {
+    link: 'Ссылка',
+    dropdown: 'Колонка со списком',
+  },
+}
+
+const placementLabels = {
+  header: 'Шапка',
+  footer: 'Подвал',
+}
+
+const currentTypeLabels = computed(
+  () => typeLabelsByPlacement[sectionForm.placement] || typeLabelsByPlacement.header,
+)
+
+function typeLabelFor(section) {
+  const labels = typeLabelsByPlacement[section.placement] || typeLabelsByPlacement.header
+  return labels[section.type] || section.type
 }
 
 const sectionOptions = computed(() =>
   sections.value.map((section) => ({
     key: section.key,
-    label: section.title,
+    label: `${section.title} (${placementLabels[section.placement] || section.placement} · ${typeLabelFor(section)})`,
   })),
 )
+
+const menuGroups = computed(() => {
+  const header = sections.value.filter((section) => section.placement !== 'footer')
+  const footer = sections.value.filter((section) => section.placement === 'footer')
+
+  return [
+    { key: 'header', title: placementLabels.header, sections: header },
+    { key: 'footer', title: placementLabels.footer, sections: footer },
+  ].filter((group) => group.sections.length > 0)
+})
 
 function resetSectionForm() {
   editingSectionId.value = null
   sectionFormOpen.value = false
   Object.assign(sectionForm, {
     key: '',
+    placement: 'header',
     title: '',
     url: '',
     type: 'link',
@@ -79,6 +112,7 @@ function resetItemForm() {
     title: '',
     url: '',
     sort_order: 0,
+    is_active: true,
     open_in_new_tab: false,
   })
   itemError.value = ''
@@ -99,6 +133,7 @@ function openCreateItem() {
 function startEditSection(section) {
   editingSectionId.value = section.id
   sectionForm.key = section.key
+  sectionForm.placement = section.placement || 'header'
   sectionForm.title = section.title
   sectionForm.url = section.url || ''
   sectionForm.type = section.type
@@ -117,6 +152,7 @@ function startEditItem(item) {
   itemForm.title = item.title
   itemForm.url = item.url
   itemForm.sort_order = item.sort_order ?? 0
+  itemForm.is_active = item.is_active !== false
   itemForm.open_in_new_tab = Boolean(item.open_in_new_tab)
   itemError.value = ''
   itemFormOpen.value = true
@@ -220,6 +256,57 @@ async function removeItem(item) {
   }
 }
 
+function isActiveFlag(value) {
+  return value !== false
+}
+
+async function toggleSectionActive(section) {
+  const nextActive = !isActiveFlag(section.is_active)
+
+  try {
+    await api.put(`/admin/menu-sections/${section.id}`, {
+      key: section.key,
+      placement: section.placement || 'header',
+      title: section.title,
+      url: section.url || null,
+      type: section.type,
+      include_categories: Boolean(section.include_categories),
+      sort_order: section.sort_order ?? 0,
+      open_in_new_tab: Boolean(section.open_in_new_tab),
+      is_active: nextActive,
+    })
+    if (editingSectionId.value === section.id) {
+      sectionForm.is_active = nextActive
+    }
+    await load()
+    toast.success(nextActive ? 'Раздел включён' : 'Раздел выключен')
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Не удалось изменить статус раздела.')
+  }
+}
+
+async function toggleItemActive(item) {
+  const nextActive = !isActiveFlag(item.is_active)
+
+  try {
+    await api.put(`/admin/menu-items/${item.id}`, {
+      parent_key: item.parent_key,
+      title: item.title,
+      url: item.url,
+      sort_order: item.sort_order ?? 0,
+      open_in_new_tab: Boolean(item.open_in_new_tab),
+      is_active: nextActive,
+    })
+    if (editingItemId.value === item.id) {
+      itemForm.is_active = nextActive
+    }
+    await load()
+    toast.success(nextActive ? 'Подпункт включён' : 'Подпункт выключен')
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Не удалось изменить статус подпункта.')
+  }
+}
+
 function itemsForSection(sectionKey) {
   return items.value.filter((item) => item.parent_key === sectionKey)
 }
@@ -232,7 +319,9 @@ onMounted(load)
     <header class="admin-page__header">
       <h1>Меню сайта</h1>
       <p class="admin-page__lead">
-        Разделы главного меню и их подпункты. Для каталога можно включить автоматический вывод категорий.
+        Разделы шапки и подвала работают одинаково: тип «Ссылка» — один пункт,
+        тип «Выпадающий список / Колонка» — заголовок и вложенные подпункты.
+        Для каталога можно включить автоматический вывод категорий.
       </p>
     </header>
 
@@ -280,6 +369,14 @@ onMounted(load)
         </label>
 
         <label class="field">
+          <span>Расположение</span>
+          <select v-model="sectionForm.placement" required>
+            <option value="header">{{ placementLabels.header }}</option>
+            <option value="footer">{{ placementLabels.footer }}</option>
+          </select>
+        </label>
+
+        <label class="field">
           <span>Название</span>
           <input v-model="sectionForm.title" required />
         </label>
@@ -287,9 +384,17 @@ onMounted(load)
         <label class="field">
           <span>Тип</span>
           <select v-model="sectionForm.type" required>
-            <option value="link">{{ typeLabels.link }}</option>
-            <option value="dropdown">{{ typeLabels.dropdown }}</option>
+            <option value="link">{{ currentTypeLabels.link }}</option>
+            <option value="dropdown">{{ currentTypeLabels.dropdown }}</option>
           </select>
+          <span class="admin-field-hint">
+            <template v-if="sectionForm.placement === 'footer'">
+              «Ссылка» — один пункт в футере. «Колонка со списком» — заголовок и вложенные пункты.
+            </template>
+            <template v-else>
+              «Ссылка» — пункт верхнего уровня. «Выпадающий список» — пункт с подменю.
+            </template>
+          </span>
         </label>
 
         <label class="field">
@@ -402,6 +507,11 @@ onMounted(load)
           <input v-model="itemForm.open_in_new_tab" type="checkbox" />
           <span>Открывать в новой вкладке</span>
         </label>
+
+        <label class="field admin-checkbox">
+          <input v-model="itemForm.is_active" type="checkbox" />
+          <span>Активен</span>
+        </label>
       </fieldset>
 
       <p v-if="itemError" class="admin-error">{{ itemError }}</p>
@@ -425,74 +535,138 @@ onMounted(load)
       <AppLoader v-if="loading" />
 
       <template v-else>
-        <div v-if="sections.length" class="menu-sections">
-          <article
-            v-for="section in sections"
-            :key="section.id"
-            class="menu-section admin-list-item"
-            :class="{ 'admin-list-item--editing': editingSectionId === section.id }"
+        <template v-if="menuGroups.length">
+          <section
+            v-for="group in menuGroups"
+            :key="group.key"
+            class="menu-placement-group"
           >
-            <header class="menu-section__header">
-              <div>
-                <strong>{{ section.title }}</strong>
-                <span class="muted menu-section__meta">
-                  {{ typeLabels[section.type] || section.type }}
-                  <template v-if="section.url"> · {{ section.url }}</template>
-                  <template v-if="section.include_categories"> · + категории</template>
-                </span>
-              </div>
-              <div class="menu-section__actions">
-                <AdminIconButton
-                  icon="pencil"
-                  :label="editingSectionId === section.id ? 'Редактируется' : 'Изменить'"
-                  :active="editingSectionId === section.id"
-                  @click="startEditSection(section)"
-                />
-                <AdminIconButton
-                  icon="trash"
-                  label="Удалить"
-                  variant="danger"
-                  @click="removeSection(section)"
-                />
-              </div>
-            </header>
-
-            <ul v-if="itemsForSection(section.key).length" class="menu-section__list">
-              <li
-                v-for="item in itemsForSection(section.key)"
-                :key="item.id"
-                :class="{ 'menu-section__item--editing': editingItemId === item.id }"
+          <div class="flex justify-center">
+            <h4 class="uppercase w-auto text-[13px] border-1 m-auto inline-block border-[#45556c] rounded-[20px] bg-white py-2 px-4 text-xl font-bold text-[#45556c]">{{ group.title }}</h4>
+            </div>
+            
+            <div class="menu-sections">
+              <article
+                v-for="section in group.sections"
+                :key="section.id"
+                class="menu-section admin-list-item"
+                :class="{
+                  'admin-list-item--editing': editingSectionId === section.id,
+                  'menu-section--inactive': !isActiveFlag(section.is_active),
+                }"
               >
-                <span>{{ item.title }}</span>
-                <span class="muted">{{ item.url }}</span>
-                <div class="menu-section__item-actions">
-                  <AdminIconButton
-                    icon="pencil"
-                    :label="editingItemId === item.id ? 'Редактируется' : 'Изменить'"
-                    :active="editingItemId === item.id"
-                    @click="startEditItem(item)"
-                  />
-                  <AdminIconButton
-                    icon="trash"
-                    label="Удалить"
-                    variant="danger"
-                    @click="removeItem(item)"
-                  />
-                </div>
-              </li>
-            </ul>
+                <header class="menu-section__header">
+                  <div>
+                    <strong>
+                      {{ section.title }}
+                      <span
+                        v-if="!isActiveFlag(section.is_active)"
+                        class="menu-status menu-status--off"
+                      >выкл</span>
+                    </strong>
+                    <span class="muted menu-section__meta">
+                      {{ typeLabelFor(section) }}
+                      <template v-if="section.url"> · {{ section.url }}</template>
+                      <template v-if="section.include_categories"> · + категории</template>
+                    </span>
+                  </div>
+                  <div class="menu-section__actions">
+                    <button
+                      type="button"
+                      class="menu-toggle-btn"
+                      :class="isActiveFlag(section.is_active) ? 'menu-toggle-btn--on' : 'menu-toggle-btn--off'"
+                      @click="toggleSectionActive(section)"
+                    >
+                      {{ isActiveFlag(section.is_active) ? 'Выкл' : 'Вкл' }}
+                    </button>
+                    <AdminIconButton
+                      icon="pencil"
+                      :label="editingSectionId === section.id ? 'Редактируется' : 'Изменить'"
+                      :active="editingSectionId === section.id"
+                      @click="startEditSection(section)"
+                    />
+                    <AdminIconButton
+                      icon="trash"
+                      label="Удалить"
+                      variant="danger"
+                      @click="removeSection(section)"
+                    />
+                  </div>
+                </header>
 
-            <p v-else class="muted menu-section__empty">Подпунктов нет</p>
-          </article>
-        </div>
+                <ul v-if="itemsForSection(section.key).length" class="menu-section__list">
+                  <li
+                    v-for="item in itemsForSection(section.key)"
+                    :key="item.id"
+                    :class="{
+                      'menu-section__item--editing': editingItemId === item.id,
+                      'menu-section__item--inactive': !isActiveFlag(item.is_active),
+                    }"
+                  >
+                    <span>
+                      {{ item.title }}
+                      <span
+                        v-if="!isActiveFlag(item.is_active)"
+                        class="menu-status menu-status--off"
+                      >выкл</span>
+                    </span>
+                    <span class="muted">{{ item.url }}</span>
+                    <div class="menu-section__item-actions">
+                      <button
+                        type="button"
+                        class="menu-toggle-btn"
+                        :class="isActiveFlag(item.is_active) ? 'menu-toggle-btn--on' : 'menu-toggle-btn--off'"
+                        @click="toggleItemActive(item)"
+                      >
+                        {{ isActiveFlag(item.is_active) ? 'Выкл' : 'Вкл' }}
+                      </button>
+                      <AdminIconButton
+                        icon="pencil"
+                        :label="editingItemId === item.id ? 'Редактируется' : 'Изменить'"
+                        :active="editingItemId === item.id"
+                        @click="startEditItem(item)"
+                      />
+                      <AdminIconButton
+                        icon="trash"
+                        label="Удалить"
+                        variant="danger"
+                        @click="removeItem(item)"
+                      />
+                    </div>
+                  </li>
+                </ul>
 
-        <p v-if="!sections.length" class="muted">Разделов меню пока нет.</p>
+                <p v-else class="muted menu-section__empty">Подпунктов нет</p>
+              </article>
+            </div>
+          </section>
+        </template>
+
+        <p v-else class="muted">Разделов меню пока нет.</p>
       </template>
     </div>
   </section>
 </template>
 
 <style scoped>
+.menu-placement-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.menu-placement-group + .menu-placement-group {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.menu-placement-group__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+}
+
 .menu-sections {
   display: grid;
   gap: 0;
@@ -538,6 +712,58 @@ onMounted(load)
 .menu-section__item--editing {
   background: #eff6ff;
   box-shadow: 0 0 0 2px #3b72ff;
+}
+
+.menu-section--inactive,
+.menu-section__item--inactive {
+  opacity: 0.55;
+}
+
+.menu-status {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.menu-status--off {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.menu-toggle-btn {
+  min-width: 3.25rem;
+  height: 2.25rem;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-toggle-btn--on {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.menu-toggle-btn--on:hover {
+  background: #d1fae5;
+}
+
+.menu-toggle-btn--off {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.menu-toggle-btn--off:hover {
+  background: #fde68a;
 }
 
 .menu-section__empty {

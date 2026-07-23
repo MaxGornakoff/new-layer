@@ -42,7 +42,7 @@ function accept() {
       aria-describedby="cookie-banner-text"
     >
       <div
-        class="pointer-events-auto flex w-full max-w-[640px] flex-col gap-4 rounded-[20px] border border-slate-200 bg-white px-5 py-4 shadow-[0_16px_48px_rgba(15,23,42,0.16)] sm:flex-row sm:items-center sm:gap-5 sm:px-6 sm:py-5"
+        class="pointer-events-auto flex w-full max-w-[640px] flex-col gap-4 rounded-[20px] border border-slate-200 bg-white px-5 py-4 shadow-[0_16px_48px_rgba(15,23,42,0.16)] sm:flex-row sm:items-end sm:gap-5 sm:px-6 sm:py-5"
       >
         <div class="min-w-0 flex-1">
           <h2 id="cookie-banner-title" class="m-0 mb-1.5 text-base font-bold text-[#222222] sm:text-[1.0625rem]">

@@ -34,6 +34,7 @@ onUnmounted(() => {
         <RouterLink class="admin-nav-link" to="/admin/orders">Заказы</RouterLink>
         <RouterLink class="admin-nav-link" to="/admin/clients">Контрагенты</RouterLink>
         <RouterLink class="admin-nav-link" to="/admin/menu">Меню</RouterLink>
+        <RouterLink class="admin-nav-link" to="/admin/faq">FAQ</RouterLink>
         <RouterLink class="admin-nav-link" to="/admin/hero-slides">Слайдер</RouterLink>
         <RouterLink class="admin-nav-link" to="/admin/site">Настройки сайта</RouterLink>
         <RouterLink class="admin-nav-link" to="/admin/delivery">Доставка</RouterLink>

@@ -5,6 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Filament Shop</title>
+    <script>
+      /* Ниже 375px: фиксируем макет 375 и даём браузеру пропорционально уменьшить страницу */
+      (function () {
+        var meta = document.querySelector('meta[name="viewport"]')
+        if (!meta) return
+
+        var FLUID = 'width=device-width, initial-scale=1.0'
+        var LOCKED = 'width=375'
+
+        function syncViewport() {
+          meta.setAttribute('content', screen.width < 375 ? LOCKED : FLUID)
+        }
+
+        syncViewport()
+        window.addEventListener('orientationchange', syncViewport)
+        window.addEventListener('resize', syncViewport)
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

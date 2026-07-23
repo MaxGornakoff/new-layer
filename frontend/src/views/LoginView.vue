@@ -39,19 +39,13 @@ async function submit(event) {
       <h1 class="m-0 text-center text-2xl font-semibold uppercase leading-tight sm:text-[28px] lg:text-3xl">
         Вход
       </h1>
-      <p
-        v-if="adminHint"
-        class="mb-4 rounded-lg bg-sky-50 p-3 text-[0.9rem] text-blue-800"
-      >
-        Для админки войдите как <strong>admin@shop.local</strong> / <strong>password</strong>
-      </p>
       <form class="pb-4 pt-6" novalidate @submit.prevent="submit">
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Email</span>
+        <label class="field">
+          <span>Email</span>
           <input v-model="form.email" name="email" type="email" required />
         </label>
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Пароль</span>
+        <label class="field">
+          <span>Пароль</span>
           <input v-model="form.password" name="password" type="password" required />
         </label>
         <p v-if="error" class="m-0 mb-3 text-sm text-red-600">{{ error }}</p>

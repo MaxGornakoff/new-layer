@@ -19,6 +19,7 @@ const router = createRouter({
         { path: 'profile', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { requiresAuth: true } },
         { path: 'delivery', name: 'delivery', component: () => import('@/views/DeliveryView.vue') },
         { path: 'wholesale', name: 'wholesale', component: () => import('@/views/WholesaleView.vue') },
+        { path: 'faq', name: 'faq', component: () => import('@/views/FaqView.vue') },
         {
           path: 'legal/:slug',
           name: 'legal-document',
@@ -37,6 +38,7 @@ const router = createRouter({
         { path: 'orders', name: 'admin-orders', component: () => import('@/views/admin/OrdersView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'clients', name: 'admin-clients', component: () => import('@/views/admin/ClientsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'menu', name: 'admin-menu', component: () => import('@/views/admin/MenuItemsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+        { path: 'faq', name: 'admin-faq', component: () => import('@/views/admin/FaqsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'hero-slides', name: 'admin-hero-slides', component: () => import('@/views/admin/HeroSlidesView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'site', name: 'admin-site', component: () => import('@/views/admin/SiteSettingsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
         { path: 'delivery', name: 'admin-delivery', component: () => import('@/views/admin/DeliverySettingsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },

@@ -3,36 +3,59 @@ import { ref } from 'vue'
 import api from '@/api/client'
 
 function applyFavicon(url) {
-  if (!url) return
+  if (!url || typeof document === 'undefined') return
 
-  let link = document.querySelector("link[rel='icon']")
+  const absoluteUrl = /^https?:\/\//i.test(url) || url.startsWith('data:')
+    ? url
+    : new URL(url, window.location.origin).href
 
-  if (!link) {
-    link = document.createElement('link')
-    link.rel = 'icon'
-    document.head.appendChild(link)
-  }
+  const cacheBusted = `${absoluteUrl}${absoluteUrl.includes('?') ? '&' : '?'}v=${Date.now()}`
 
-  link.href = url
+  document
+    .querySelectorAll("link[rel='icon'], link[rel=\"shortcut icon\"], link[rel='apple-touch-icon']")
+    .forEach((el) => el.remove())
 
-  if (url.endsWith('.svg')) {
-    link.type = 'image/svg+xml'
-  } else if (url.endsWith('.png')) {
-    link.type = 'image/png'
-  }
+  let type
+  if (/\.svg(\?|$)/i.test(absoluteUrl)) type = 'image/svg+xml'
+  else if (/\.png(\?|$)/i.test(absoluteUrl)) type = 'image/png'
+  else if (/\.ico(\?|$)/i.test(absoluteUrl)) type = 'image/x-icon'
+
+  const link = document.createElement('link')
+  link.rel = 'icon'
+  if (type) link.type = type
+  link.href = cacheBusted
+  document.head.appendChild(link)
+}
+
+export function phoneToTelHref(phone) {
+  if (!phone) return null
+  const digits = String(phone).replace(/\D/g, '')
+  if (!digits) return null
+  return `tel:+${digits}`
 }
 
 export const useSiteStore = defineStore('site', () => {
   const logoUrl = ref(null)
   const faviconUrl = ref(null)
   const catalogAutoApplyFilters = ref(true)
+  const contactPhone = ref(null)
+  const contactEmailBusiness = ref(null)
+  const contactEmailSupport = ref(null)
+  const contactMessengers = ref([])
   const loaded = ref(false)
 
   function applySettings(settings) {
     logoUrl.value = settings.logo_url
     faviconUrl.value = settings.favicon_url
     catalogAutoApplyFilters.value = settings.catalog_auto_apply_filters ?? true
-    applyFavicon(faviconUrl.value)
+    contactPhone.value = settings.contact_phone || null
+    contactEmailBusiness.value = settings.contact_email_business || null
+    contactEmailSupport.value = settings.contact_email_support || null
+    contactMessengers.value = Array.isArray(settings.contact_messengers)
+      ? settings.contact_messengers
+      : []
+    // Tab icon = favicon from admin; if empty, fall back to logo
+    applyFavicon(faviconUrl.value || logoUrl.value)
   }
 
   async function fetchSettings() {
@@ -49,6 +72,10 @@ export const useSiteStore = defineStore('site', () => {
     logoUrl,
     faviconUrl,
     catalogAutoApplyFilters,
+    contactPhone,
+    contactEmailBusiness,
+    contactEmailSupport,
+    contactMessengers,
     loaded,
     fetchSettings,
     setFromAdmin,

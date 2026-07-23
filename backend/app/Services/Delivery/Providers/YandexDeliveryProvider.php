@@ -46,7 +46,7 @@ class YandexDeliveryProvider extends AbstractDeliveryProvider
             $result = $client->calculate(
                 $request,
                 $sender,
-                $request->destinationTerminalId,
+                $request->terminalIdFor($this->key()),
             );
 
             $deliveryDays = isset($result['delivery_days']) ? (int) $result['delivery_days'] : null;

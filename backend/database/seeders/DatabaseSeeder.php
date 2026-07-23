@@ -81,6 +81,7 @@ class DatabaseSeeder extends Seeder
         $menuSections = [
             [
                 'key' => 'catalog',
+                'placement' => MenuSection::PLACEMENT_HEADER,
                 'title' => 'Каталог',
                 'url' => '/catalog',
                 'type' => MenuSection::TYPE_DROPDOWN,
@@ -89,6 +90,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'key' => 'about',
+                'placement' => MenuSection::PLACEMENT_HEADER,
                 'title' => 'О нас',
                 'url' => '/#about-us',
                 'type' => MenuSection::TYPE_LINK,
@@ -97,6 +99,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'key' => 'delivery',
+                'placement' => MenuSection::PLACEMENT_HEADER,
                 'title' => 'Доставка',
                 'url' => '/delivery',
                 'type' => MenuSection::TYPE_LINK,
@@ -105,6 +108,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'key' => 'marketplaces',
+                'placement' => MenuSection::PLACEMENT_HEADER,
                 'title' => 'Маркетплейсы',
                 'url' => null,
                 'type' => MenuSection::TYPE_DROPDOWN,
@@ -113,11 +117,48 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'key' => 'wholesale',
+                'placement' => MenuSection::PLACEMENT_HEADER,
                 'title' => 'Оптовикам',
                 'url' => '/wholesale',
                 'type' => MenuSection::TYPE_LINK,
                 'include_categories' => false,
                 'sort_order' => 5,
+            ],
+            [
+                'key' => 'footer-catalog',
+                'placement' => MenuSection::PLACEMENT_FOOTER,
+                'title' => 'Каталог',
+                'url' => '/catalog',
+                'type' => MenuSection::TYPE_DROPDOWN,
+                'include_categories' => true,
+                'sort_order' => 1,
+            ],
+            [
+                'key' => 'footer-buyers',
+                'placement' => MenuSection::PLACEMENT_FOOTER,
+                'title' => 'Покупателям',
+                'url' => null,
+                'type' => MenuSection::TYPE_DROPDOWN,
+                'include_categories' => false,
+                'sort_order' => 2,
+            ],
+            [
+                'key' => 'footer-business',
+                'placement' => MenuSection::PLACEMENT_FOOTER,
+                'title' => 'Для бизнеса',
+                'url' => null,
+                'type' => MenuSection::TYPE_DROPDOWN,
+                'include_categories' => false,
+                'sort_order' => 3,
+            ],
+            [
+                'key' => 'footer-legal',
+                'placement' => MenuSection::PLACEMENT_FOOTER,
+                'title' => 'Документы',
+                'url' => null,
+                'type' => MenuSection::TYPE_DROPDOWN,
+                'include_categories' => false,
+                'sort_order' => 4,
             ],
         ];
 
@@ -139,5 +180,36 @@ class DatabaseSeeder extends Seeder
                 'open_in_new_tab' => true,
             ]
         );
+
+        $footerItems = [
+            ['parent_key' => 'footer-buyers', 'title' => 'Доставка и оплата', 'url' => '/delivery', 'sort_order' => 1],
+            ['parent_key' => 'footer-buyers', 'title' => 'Возврат и обмен', 'url' => '/delivery', 'sort_order' => 2],
+            ['parent_key' => 'footer-buyers', 'title' => 'Гарантия качества', 'url' => '/#about-us', 'sort_order' => 3],
+            ['parent_key' => 'footer-buyers', 'title' => 'Частые вопросы', 'url' => '/faq', 'sort_order' => 4],
+            ['parent_key' => 'footer-business', 'title' => 'Оптовый прайс-лист', 'url' => '/wholesale', 'sort_order' => 1],
+            ['parent_key' => 'footer-business', 'title' => 'Маркетплейсы', 'url' => '/wholesale', 'sort_order' => 2],
+            ['parent_key' => 'footer-business', 'title' => 'Отсрочка платежа', 'url' => '/wholesale', 'sort_order' => 3],
+            ['parent_key' => 'footer-business', 'title' => 'Реквизиты компании', 'url' => '/wholesale', 'sort_order' => 4],
+            ['parent_key' => 'footer-legal', 'title' => 'Политика конфиденциальности', 'url' => '/legal/privacy-policy', 'sort_order' => 1],
+            ['parent_key' => 'footer-legal', 'title' => 'Политика использования cookie', 'url' => '/legal/cookie-policy', 'sort_order' => 2],
+            ['parent_key' => 'footer-legal', 'title' => 'Согласие на обработку персональных данных', 'url' => '/legal/personal-data-consent', 'sort_order' => 3],
+            ['parent_key' => 'footer-legal', 'title' => 'Публичная оферта', 'url' => '/legal/public-offer', 'sort_order' => 4],
+            ['parent_key' => 'footer-legal', 'title' => 'Пользовательское соглашение', 'url' => '/legal/user-agreement', 'sort_order' => 5],
+        ];
+
+        foreach ($footerItems as $item) {
+            MenuItem::updateOrCreate(
+                [
+                    'parent_key' => $item['parent_key'],
+                    'title' => $item['title'],
+                ],
+                [
+                    'url' => $item['url'],
+                    'sort_order' => $item['sort_order'],
+                    'open_in_new_tab' => false,
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }

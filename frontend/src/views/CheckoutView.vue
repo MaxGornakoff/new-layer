@@ -89,7 +89,7 @@ async function submit(event) {
     <CartOrderPackNotice v-if="cart.items.length" show-catalog-link class="mb-4" />
 
     <form class="grid min-w-0 gap-4 lg:grid-cols-2 lg:items-start" novalidate @submit.prevent="submit">
-      <div class="card grid min-w-0 gap-4 self-start lg:row-span-2">
+      <div class="p-5 card grid min-w-0 gap-4 self-start lg:row-span-2">
         <h3 class="m-0 text-lg font-semibold">Контактные данные</h3>
 
         <label class="field">

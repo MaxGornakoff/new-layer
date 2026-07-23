@@ -31,16 +31,16 @@ const stats = [
       <div
         v-for="(item, index) in stats"
         :key="index"
-        class="stats__item flex min-w-0 items-center gap-3 sm:gap-3.5 xl:max-w-none"
+        class="stats__item flex max-sm:justify-start min-w-0 items-center gap-3 sm:gap-3.5 xl:max-w-none max-md:justify-end max-md:gap-8"
         :class="`stats__item--${item.index}`"
       >
         <p
-          class="shrink-0 text-[32px] leading-none tracking-tight text-[#222222] sm:text-[44px] lg:text-[56px]"
+          class="shrink-0 text-[32px] leading-none tracking-tight text-[#222222] max-sm:justify-end max-sm:min-w-[118px] max-sm:flex  sm:text-[44px] lg:text-[56px]"
         >
           {{ item.value }}
         </p>
         <p
-          class="stats__item-text max-w-[220px] text-[12px] leading-snug text-[#222222] sm:max-w-[245px] sm:text-[14px]"
+          class="stats__item-text max-w-[220px] text-[12px] leading-snug text-[#222222] max-sm:max-w-none max-md:max-w-[210px] max-md:text-[14px]"
         >
           {{ item.text }}
         </p>

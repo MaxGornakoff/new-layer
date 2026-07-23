@@ -50,24 +50,24 @@ async function submit(event) {
         Регистрация
       </h1>
       <form class="pt-6" novalidate @submit.prevent="submit">
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Имя</span>
+        <label class="field">
+          <span>Имя</span>
           <input v-model="form.name" name="name" required />
         </label>
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Email</span>
+        <label class="field">
+          <span>Email</span>
           <input v-model="form.email" name="email" type="email" required />
         </label>
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Телефон</span>
+        <label class="field">
+          <span>Телефон</span>
           <input v-model="form.phone" name="phone" />
         </label>
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Пароль</span>
+        <label class="field">
+          <span>Пароль</span>
           <input v-model="form.password" name="password" type="password" required />
         </label>
-        <label class="field relative mb-5">
-          <span class="absolute top-[-10px] left-3 block bg-[#ffffff] px-2 text-[14px]">Повтор пароля</span>
+        <label class="field">
+          <span>Повтор пароля</span>
           <input
             v-model="form.password_confirmation"
             name="password_confirmation"

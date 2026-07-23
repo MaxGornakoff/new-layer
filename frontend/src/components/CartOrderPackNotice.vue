@@ -30,7 +30,7 @@ const progressPercent = computed(() => {
 <template>
   <div
     v-if="cart.totalItems > 0"
-    class="rounded-xl border px-4 py-3"
+    class="rounded-xl border px-5 py-4"
     :class="cart.canCheckout ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'"
   >
     <div class="mb-2 flex items-center justify-between gap-3 text-sm">

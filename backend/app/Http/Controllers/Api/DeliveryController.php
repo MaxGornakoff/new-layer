@@ -14,8 +14,19 @@ class DeliveryController extends Controller
 {
     public function providers(): JsonResponse
     {
+        try {
+            $providers = DeliveryLocationService::make()->listCheckoutProviders();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'data' => [],
+                'message' => 'Службы доставки временно недоступны. Проверьте настройки в админке.',
+            ]);
+        }
+
         return response()->json([
-            'data' => DeliveryLocationService::make()->listCheckoutProviders(),
+            'data' => $providers,
         ]);
     }
 
@@ -69,6 +80,7 @@ class DeliveryController extends Controller
             'destination_city_guid' => ['nullable', 'string', 'max:64'],
             'destination_city_id' => ['nullable', 'string', 'max:64'],
             'destination_terminal_id' => ['nullable', 'string', 'max:64'],
+            'destination_terminal_provider' => ['nullable', 'string', 'max:64'],
             'destination_postal_code' => ['nullable', 'string', 'max:16'],
             'total_quantity' => ['required', 'integer', 'min:1'],
         ]);
@@ -81,6 +93,7 @@ class DeliveryController extends Controller
                 $data['destination_city_guid'] ?? null,
                 $data['destination_city_id'] ?? null,
                 $data['destination_terminal_id'] ?? null,
+                $data['destination_terminal_provider'] ?? null,
             );
         } catch (InvalidArgumentException $exception) {
             return response()->json([

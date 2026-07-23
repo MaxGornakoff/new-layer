@@ -16,6 +16,17 @@
     box-sizing: border-box;
   }
 
+  html {
+    /* Keep layout width stable when the page scrollbar appears/disappears */
+    scrollbar-gutter: stable;
+  }
+
+  @supports not (scrollbar-gutter: stable) {
+    html {
+      overflow-y: scroll;
+    }
+  }
+
   svg{
     width: 100%;
     height: 100%;
@@ -59,11 +70,16 @@
     cursor: not-allowed;
   }
 
-  button,
+  button {
+    font: inherit;
+  }
+
   input,
   select,
   textarea {
-    font: inherit;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
   }
 
   input:focus-visible,
@@ -115,18 +131,69 @@
     @apply grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(220px,1fr))];
   }
 
+  /*
+   * Floating labels (login/register style):
+   * <label class="field"><span>Имя</span><input /></label>
+   */
   .field {
-    @apply mb-3.5 grid gap-1.5;
+    --field-label-bg: #ffffff;
+    @apply relative pb-5 mt-1.5 block;
+  }
+
+  .field > span:first-child {
+    @apply absolute top-[-10px] left-3 z-[1] block px-2 text-[14px] font-normal leading-none text-[#777];
+    background-color: var(--field-label-bg);
+  }
+
+  .admin-layout .field > span:first-child {
+    background: linear-gradient(to top, #ffffff, #f8fafb);
   }
 
   .field input,
   .field select,
   .field textarea {
-    @apply w-full rounded-lg border border-slate-300 px-3 py-2.5 bg-[#ffffff];
+    @apply w-full rounded-lg border border-slate-300 bg-[#ffffff] px-3 py-2.5 text-[15px] font-medium;
   }
 
-  .field input[type="checkbox"]{
-    @apply w-auto h-auto;
+  .field input[type='checkbox'],
+  .field input[type='radio'] {
+    @apply h-auto w-auto;
+  }
+
+  .field input[type='color'] {
+    @apply h-10 w-12 cursor-pointer p-1;
+  }
+
+  .field > .admin-field-hint,
+  .field > .muted,
+  .field > .error,
+  .field > p {
+    @apply relative mt-1.5 block bg-transparent px-0;
+  }
+
+  /* Color picker row stays beside text input */
+  .field .color-input {
+    @apply flex items-center gap-2;
+  }
+
+  .field .color-input input[type='color'] {
+    @apply h-10 w-12 shrink-0 cursor-pointer p-1;
+  }
+
+  .field .color-input input[type='text'] {
+    @apply min-w-0 flex-1;
+  }
+
+  /* Checkboxes / radios: keep inline row, no floating label */
+  .field.admin-checkbox,
+  .field.checkbox {
+    @apply mb-3.5 mt-2 flex items-center justify-start gap-2;
+  }
+
+  .field.admin-checkbox > span,
+  .field.checkbox > span {
+    position: static;
+    @apply bg-transparent p-0 text-sm font-normal leading-snug;
   }
 
   .muted {
@@ -179,6 +246,7 @@
   }
 
   .admin-form__section {
+    --field-label-bg: #f8fafb;
     @apply m-0 border-[#F2F7F8] pt-4 border-solid border-t rounded-[12px] bg-[#F8FAFB] px-5 mb-10 pb-3;
   }
 
@@ -223,7 +291,7 @@
   }
 
   .admin-field-hint {
-    @apply mt-1 text-[0.8125rem] text-muted;
+    @apply mt-3 text-[0.8125rem] pb-5 text-muted;
   }
 
   .admin-checkbox {

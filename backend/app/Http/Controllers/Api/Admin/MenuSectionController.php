@@ -14,6 +14,7 @@ class MenuSectionController extends Controller
     public function index(): JsonResponse
     {
         $sections = MenuSection::query()
+            ->orderByRaw("CASE placement WHEN 'header' THEN 0 WHEN 'footer' THEN 1 ELSE 2 END")
             ->orderBy('sort_order')
             ->orderBy('title')
             ->get();
@@ -53,6 +54,7 @@ class MenuSectionController extends Controller
                 'regex:/^[a-z0-9_-]+$/',
                 Rule::unique('menu_sections', 'key')->ignore($menuSection?->id),
             ],
+            'placement' => ['required', Rule::in(MenuSection::PLACEMENTS)],
             'title' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'string', 'max:2048'],
             'type' => ['required', Rule::in(MenuSection::TYPES)],

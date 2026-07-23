@@ -39,6 +39,7 @@ class DeliveryCalculator
         ?string $destinationCityGuid = null,
         ?string $destinationCityId = null,
         ?string $destinationTerminalId = null,
+        ?string $destinationTerminalProvider = null,
     ): array {
         $packSize = (int) ($this->settings->pack_units_count ?: config('delivery.pack_size', 10));
 
@@ -79,6 +80,7 @@ class DeliveryCalculator
             destinationCityGuid: $destinationCityGuid,
             destinationCityId: $destinationCityId,
             destinationTerminalId: $destinationTerminalId,
+            destinationTerminalProvider: $destinationTerminalProvider,
         );
 
         $quotes = collect($this->providers())

@@ -6,13 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use App\Models\MenuSection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MenuController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $placement = $request->validate([
+            'placement' => ['sometimes', 'string', Rule::in(MenuSection::PLACEMENTS)],
+        ])['placement'] ?? MenuSection::PLACEMENT_HEADER;
+
         $sections = MenuSection::query()
             ->where('is_active', true)
+            ->where('placement', $placement)
             ->orderBy('sort_order')
             ->orderBy('title')
             ->get();
@@ -35,6 +42,7 @@ class MenuController extends Controller
             return [
                 'id' => $section->id,
                 'key' => $section->key,
+                'placement' => $section->placement,
                 'title' => $section->title,
                 'url' => $section->url,
                 'type' => $section->type,

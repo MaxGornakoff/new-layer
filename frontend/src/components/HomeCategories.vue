@@ -85,7 +85,7 @@ function categoryAdvantages(category) {
 
         <div
           v-if="category.image_url"
-          class="pointer-events-none absolute top-[17%] right-[-20%] z-3 flex h-[330px] max-w-[280px] items-end justify-center max-md:relative max-md:right-auto max-md:top-auto max-md:mx-auto max-md:h-auto max-md:max-h-[180px] max-md:w-full max-md:max-w-none max-md:px-4 max-md:pb-4"
+          class="pointer-events-none absolute top-[17%] right-[-20%] z-3 flex h-[330px] max-w-[280px] items-end justify-center max-md:right-[5%] max-md:top-[10%] max-md:mx-auto max-md:h-auto max-md:max-h-[180px] max-md:w-full max-md:max-w-[130px]"
         >
           <img
             :src="category.image_url"

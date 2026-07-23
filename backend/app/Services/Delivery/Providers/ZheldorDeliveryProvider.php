@@ -45,7 +45,7 @@ class ZheldorDeliveryProvider extends AbstractDeliveryProvider
             $result = $client->calculate(
                 $request,
                 $sender,
-                $request->destinationTerminalId,
+                $request->terminalIdFor($this->key()),
             );
 
             return new DeliveryQuote(

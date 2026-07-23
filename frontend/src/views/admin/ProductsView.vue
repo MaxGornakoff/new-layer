@@ -554,9 +554,6 @@ watch(
 
         <div class="field">
           <span>Фото товара</span>
-          <p class="admin-field-hint">
-            Можно выбрать несколько файлов сразу или добавлять партиями. Первое фото — главное в каталоге.
-          </p>
           <input
             ref="imagesInputRef"
             type="file"
@@ -564,6 +561,9 @@ watch(
             multiple
             @change="onImagesChange"
           />
+          <p class="admin-field-hint">
+            Можно выбрать несколько файлов сразу или добавлять партиями. Первое фото — главное в каталоге.
+          </p>
 
           <div v-if="gallery.length" class="gallery-grid">
             <div

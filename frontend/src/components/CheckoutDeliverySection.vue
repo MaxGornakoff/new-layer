@@ -3,6 +3,10 @@ import { computed, ref, watch } from 'vue'
 import api from '@/api/client'
 import AppLoader from '@/components/AppLoader.vue'
 import DeliveryAutocomplete from '@/components/DeliveryAutocomplete.vue'
+import baikalLogo from '@/assets/icons/delivery/baikal.svg'
+import dellinLogo from '@/assets/icons/delivery/dellin.svg'
+import russianPostLogo from '@/assets/icons/delivery/russian_post.svg'
+import zheldorLogo from '@/assets/icons/delivery/zheldor.svg'
 
 const props = defineProps({
   totalQuantity: {
@@ -16,6 +20,23 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:delivery'])
+
+const providerLogos = {
+  baikal: baikalLogo,
+  dellin: dellinLogo,
+  russian_post: russianPostLogo,
+  zheldor: zheldorLogo,
+}
+
+const failedLogos = ref({})
+
+function onLogoError(provider) {
+  failedLogos.value = { ...failedLogos.value, [provider]: true }
+}
+
+function hasProviderLogo(provider) {
+  return Boolean(providerLogos[provider] && !failedLogos.value[provider])
+}
 
 const providers = ref([])
 const selectedCity = ref(null)
@@ -121,8 +142,16 @@ function emitDelivery() {
 }
 
 async function loadProviders() {
-  const { data } = await api.get('/delivery/providers')
-  providers.value = data.data ?? []
+  try {
+    const { data } = await api.get('/delivery/providers')
+    providers.value = data.data ?? []
+    if (!providers.value.length) {
+      error.value = 'Службы доставки пока не настроены. Обратитесь к администратору или заполните раздел «Доставка» в админке.'
+    }
+  } catch {
+    providers.value = []
+    error.value = 'Не удалось загрузить службы доставки. Попробуйте обновить страницу.'
+  }
 }
 
 const cityGuidForPickup = computed(() => (
@@ -136,7 +165,7 @@ const cityIdForPickup = computed(() => {
   return ''
 })
 
-function buildCalculatePayload(terminalId = null) {
+function buildCalculatePayload(terminalId = null, terminalProvider = null) {
   const payload = {
     destination_city: selectedCity.value.name,
     total_quantity: props.totalQuantity,
@@ -158,8 +187,9 @@ function buildCalculatePayload(terminalId = null) {
     payload.destination_city_guid = selectedCity.value.id
   }
 
-  if (terminalId) {
+  if (terminalId && terminalProvider) {
     payload.destination_terminal_id = terminalId
+    payload.destination_terminal_provider = terminalProvider
   }
 
   return payload
@@ -167,6 +197,7 @@ function buildCalculatePayload(terminalId = null) {
 
 async function calculateQuotes(options = {}) {
   const terminalId = options.terminalId ?? null
+  const terminalProvider = options.terminalProvider ?? null
   const resetSelection = options.resetSelection === true
 
   if (!props.canCalculate || !selectedCity.value?.name) return
@@ -182,7 +213,10 @@ async function calculateQuotes(options = {}) {
   }
 
   try {
-    const { data } = await api.post('/delivery/calculate', buildCalculatePayload(terminalId))
+    const { data } = await api.post(
+      '/delivery/calculate',
+      buildCalculatePayload(terminalId, terminalProvider),
+    )
 
     quotes.value = data.data.quotes ?? []
 
@@ -247,7 +281,10 @@ watch(selectedPickup, (pickup) => {
       || selectedProvider.value === 'zheldor')
     && pickup?.id
   ) {
-    calculateQuotes({ terminalId: pickup.id })
+    calculateQuotes({
+      terminalId: pickup.id,
+      terminalProvider: selectedProvider.value,
+    })
     return
   }
 
@@ -257,9 +294,17 @@ watch(selectedPickup, (pickup) => {
 watch(
   () => props.totalQuantity,
   () => {
-    if (selectedCity.value?.id) {
-      calculateQuotes()
+    if (!selectedCity.value?.id) return
+
+    if (selectedPickup.value?.id && selectedProvider.value) {
+      calculateQuotes({
+        terminalId: selectedPickup.value.id,
+        terminalProvider: selectedProvider.value,
+      })
+      return
     }
+
+    calculateQuotes()
   },
 )
 
@@ -276,7 +321,7 @@ loadProviders()
 </script>
 
 <template>
-  <div class="card delivery-section">
+  <div class="p-5 card grid gap-4">
     <h3 class="m-0 text-lg font-semibold">Доставка</h3>
     <p class="muted m-0 text-sm">
       Выберите город, службу доставки и пункт выдачи. Расчёт для {{ totalQuantity }} катушек.
@@ -292,19 +337,19 @@ loadProviders()
 
     <AppLoader v-if="loading" />
 
-    <p v-else-if="error" class="error">{{ error }}</p>
+    <p v-else-if="error" class="text-red-600">{{ error }}</p>
 
     <div v-else-if="displayQuotes.length" class="grid gap-3">
-      <p class="m-0 text-sm font-medium">Служба доставки</p>
+      <p class="m-0 text-[16px] font-medium">Служба доставки:</p>
 
-      <div class="providers-grid">
+      <div class="grid grid-cols-3 gap-3 mb-5 max-md:grid-cols-2">
         <label
           v-for="quote in displayQuotes"
           :key="quote.provider"
-          class="provider-option"
+          class="grid cursor-pointer gap-0.5 rounded-xl border border-slate-200 px-4 py-3.5 transition-[border-color,box-shadow] duration-150"
           :class="{
-            'provider-option--active': selectedProvider === quote.provider,
-            'provider-option--pending': !quote.available || quote.price === null,
+            'border-blue-600 shadow-[0_0_0_1px_#2563eb]': selectedProvider === quote.provider,
+            'border-dashed': !quote.available || quote.price === null,
           }"
         >
           <input
@@ -315,14 +360,30 @@ loadProviders()
             :value="quote.provider"
             @change="selectProvider(quote)"
           />
-          <span class="provider-option__name">{{ quote.name }}</span>
-          <span v-if="quote.available && quote.price != null" class="provider-option__price">
+          <span
+            v-if="hasProviderLogo(quote.provider)"
+            class="mb-1 flex h-10 w-full items-center"
+            aria-hidden="true"
+          >
+            <img
+              :src="providerLogos[quote.provider]"
+              alt=""
+              :class="{'object-top': 'dellin' === quote.provider}"
+              class="h-full w-auto max-w-full object-contain object-left"
+              @error="onLogoError(quote.provider)"
+            />
+          </span>
+          <span
+            v-else
+            class="font-semibold text-[14px] text-[#999999]"
+          >{{ quote.name }}</span>
+          <span v-if="quote.available && quote.price != null" class="text-lg font-bold">
             {{ formatPrice(quote.price) }} ₽
           </span>
-          <span v-else class="provider-option__hint">
+          <span v-else class="text-[0.8125rem] leading-snug text-slate-500">
             {{ quote.message || 'Укажите индекс получателя' }}
           </span>
-          <span v-if="formatDays(quote)" class="provider-option__days">{{ formatDays(quote) }}</span>
+          <span v-if="formatDays(quote)" class="text-sm text-slate-500">{{ formatDays(quote) }}</span>
         </label>
       </div>
 
@@ -367,7 +428,7 @@ loadProviders()
         Выбор ПВЗ для этой службы подключим на следующем шаге.
       </p>
 
-      <p v-if="deliveryReady" class="success m-0 text-sm">
+      <p v-if="deliveryReady" class="m-0 text-sm text-emerald-600">
         {{ buildDeliveryAddress() }}
       </p>
     </div>
@@ -377,74 +438,3 @@ loadProviders()
     </p>
   </div>
 </template>
-
-<style scoped>
-.delivery-section {
-  display: grid;
-  gap: 1rem;
-}
-
-.error {
-  color: #dc2626;
-}
-
-.success {
-  color: #059669;
-}
-
-.providers-grid {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.provider-option {
-  display: grid;
-  gap: 0.2rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.provider-option--active {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1px #2563eb;
-}
-
-.provider-option--pending {
-  border-style: dashed;
-}
-
-.provider-option__name {
-  font-weight: 600;
-}
-
-.provider-option__price {
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.provider-option__hint {
-  font-size: 0.8125rem;
-  color: #64748b;
-  line-height: 1.35;
-}
-
-.provider-option__days {
-  font-size: 0.875rem;
-  color: #64748b;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-</style>

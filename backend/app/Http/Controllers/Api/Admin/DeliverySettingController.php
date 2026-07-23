@@ -17,75 +17,97 @@ use Illuminate\Http\Request;
 
 class DeliverySettingController extends Controller
 {
-    public function show(): DeliverySettingResource
+    public function show(): DeliverySettingResource|JsonResponse
     {
-        return new DeliverySettingResource(DeliverySetting::current());
+        try {
+            $settings = DeliverySetting::current();
+            $this->scrubCorruptEncryptedSecrets($settings);
+
+            return new DeliverySettingResource($settings->fresh());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'Не удалось загрузить настройки доставки: '.$exception->getMessage(),
+            ], 500);
+        }
     }
 
     public function update(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'pack_units_count' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'pack_width_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
-            'pack_length_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
-            'pack_height_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
-            'pack_weight_kg' => ['nullable', 'numeric', 'min:0.001', 'max:1000'],
-            'sender_city' => ['nullable', 'string', 'max:255'],
-            'sender_postal_code' => ['nullable', 'string', 'max:16'],
-            'sender_address' => ['nullable', 'string'],
-            'provider_senders' => ['nullable', 'array'],
-            'provider_senders.*.city' => ['nullable', 'string', 'max:255'],
-            'provider_senders.*.postal_code' => ['nullable', 'string', 'max:16'],
-            'provider_senders.*.address' => ['nullable', 'string'],
-            'provider_senders.*.terminal_id' => ['nullable', 'string', 'max:64'],
-            'baikal_enabled' => ['sometimes', 'boolean'],
-            'dellin_enabled' => ['sometimes', 'boolean'],
-            'yandex_delivery_enabled' => ['sometimes', 'boolean'],
-            'zheldor_enabled' => ['sometimes', 'boolean'],
-            'cdek_enabled' => ['sometimes', 'boolean'],
-            'russian_post_enabled' => ['sometimes', 'boolean'],
-            'russian_post_object_type' => ['nullable', 'integer', 'min:1'],
-            'baikal_api_key' => ['nullable', 'string', 'max:255'],
-            'dellin_app_key' => ['nullable', 'string', 'max:255'],
-            'yandex_delivery_oauth_token' => ['nullable', 'string', 'max:255'],
-            'zheldor_login' => ['nullable', 'string', 'max:255'],
-            'zheldor_password' => ['nullable', 'string', 'max:255'],
-            'cdek_client_id' => ['nullable', 'string', 'max:255'],
-            'cdek_client_secret' => ['nullable', 'string', 'max:255'],
-            'cdek_use_test_api' => ['sometimes', 'boolean'],
-        ]);
+        try {
+            $data = $request->validate([
+                'pack_units_count' => ['sometimes', 'integer', 'min:1', 'max:100'],
+                'pack_width_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
+                'pack_length_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
+                'pack_height_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
+                'pack_weight_kg' => ['nullable', 'numeric', 'min:0.001', 'max:1000'],
+                'sender_city' => ['nullable', 'string', 'max:255'],
+                'sender_postal_code' => ['nullable', 'string', 'max:16'],
+                'sender_address' => ['nullable', 'string'],
+                'provider_senders' => ['nullable', 'array'],
+                'provider_senders.*.city' => ['nullable', 'string', 'max:255'],
+                'provider_senders.*.postal_code' => ['nullable', 'string', 'max:16'],
+                'provider_senders.*.address' => ['nullable', 'string'],
+                'provider_senders.*.terminal_id' => ['nullable', 'string', 'max:64'],
+                'baikal_enabled' => ['sometimes', 'boolean'],
+                'dellin_enabled' => ['sometimes', 'boolean'],
+                'yandex_delivery_enabled' => ['sometimes', 'boolean'],
+                'zheldor_enabled' => ['sometimes', 'boolean'],
+                'cdek_enabled' => ['sometimes', 'boolean'],
+                'russian_post_enabled' => ['sometimes', 'boolean'],
+                'russian_post_object_type' => ['nullable', 'integer', 'min:1'],
+                'baikal_api_key' => ['nullable', 'string', 'max:255'],
+                'dellin_app_key' => ['nullable', 'string', 'max:255'],
+                'yandex_delivery_oauth_token' => ['nullable', 'string', 'max:255'],
+                'zheldor_login' => ['nullable', 'string', 'max:255'],
+                'zheldor_password' => ['nullable', 'string', 'max:255'],
+                'cdek_client_id' => ['nullable', 'string', 'max:255'],
+                'cdek_client_secret' => ['nullable', 'string', 'max:255'],
+                'cdek_use_test_api' => ['sometimes', 'boolean'],
+            ]);
 
-        $settings = DeliverySetting::current();
-        $settings->fill(collect($data)->except([
-            'provider_senders',
-            'baikal_api_key',
-            'dellin_app_key',
-            'yandex_delivery_oauth_token',
-            'zheldor_password',
-            'cdek_client_secret',
-        ])->all());
+            $settings = DeliverySetting::current();
+            $this->scrubCorruptEncryptedSecrets($settings);
+            $settings->refresh();
 
-        if ($request->has('provider_senders')) {
-            $settings->provider_senders = $this->normalizeProviderSenders(
-                $request->input('provider_senders', [])
-            );
-        }
+            $settings->fill(collect($data)->except([
+                'provider_senders',
+                'baikal_api_key',
+                'dellin_app_key',
+                'yandex_delivery_oauth_token',
+                'zheldor_password',
+                'cdek_client_secret',
+            ])->all());
 
-        foreach ([
-            'baikal_api_key',
-            'dellin_app_key',
-            'yandex_delivery_oauth_token',
-            'zheldor_password',
-            'cdek_client_secret',
-        ] as $secretField) {
-            if ($request->filled($secretField)) {
-                $settings->{$secretField} = $request->string($secretField)->toString();
+            if ($request->has('provider_senders')) {
+                $settings->provider_senders = $this->normalizeProviderSenders(
+                    $request->input('provider_senders', [])
+                );
             }
+
+            foreach ([
+                'baikal_api_key',
+                'dellin_app_key',
+                'yandex_delivery_oauth_token',
+                'zheldor_password',
+                'cdek_client_secret',
+            ] as $secretField) {
+                if ($request->filled($secretField)) {
+                    $settings->{$secretField} = $request->string($secretField)->toString();
+                }
+            }
+
+            $settings->save();
+
+            return (new DeliverySettingResource($settings->fresh()))->response();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'Не удалось сохранить настройки доставки: '.$exception->getMessage(),
+            ], 500);
         }
-
-        $settings->save();
-
-        return (new DeliverySettingResource($settings))->response();
     }
 
     public function testBaikal(Request $request): JsonResponse
@@ -332,5 +354,50 @@ class DeliverySettingController extends Controller
         }
 
         return $normalized;
+    }
+
+    /**
+     * Secrets from a DB dump encrypted with another APP_KEY cannot be decrypted.
+     * Clear them so admin can save fresh keys without 500 errors.
+     */
+    private function scrubCorruptEncryptedSecrets(DeliverySetting $settings): void
+    {
+        $fields = [
+            'baikal_api_key',
+            'dellin_app_key',
+            'yandex_delivery_oauth_token',
+            'zheldor_password',
+            'cdek_client_secret',
+            'pek_api_key',
+        ];
+
+        $columns = \Illuminate\Support\Facades\Schema::getColumnListing('delivery_settings');
+        $clear = [];
+
+        foreach ($fields as $field) {
+            if (! in_array($field, $columns, true)) {
+                continue;
+            }
+
+            $raw = $settings->getAttributes()[$field] ?? null;
+
+            if (! filled($raw)) {
+                continue;
+            }
+
+            try {
+                decrypt($raw);
+            } catch (\Throwable) {
+                $clear[$field] = null;
+            }
+        }
+
+        if ($clear === []) {
+            return;
+        }
+
+        \Illuminate\Support\Facades\DB::table('delivery_settings')
+            ->where('id', $settings->id)
+            ->update($clear);
     }
 }

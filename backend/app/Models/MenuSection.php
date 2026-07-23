@@ -16,8 +16,18 @@ class MenuSection extends Model
         self::TYPE_DROPDOWN,
     ];
 
+    public const PLACEMENT_HEADER = 'header';
+
+    public const PLACEMENT_FOOTER = 'footer';
+
+    public const PLACEMENTS = [
+        self::PLACEMENT_HEADER,
+        self::PLACEMENT_FOOTER,
+    ];
+
     protected $fillable = [
         'key',
+        'placement',
         'title',
         'url',
         'type',

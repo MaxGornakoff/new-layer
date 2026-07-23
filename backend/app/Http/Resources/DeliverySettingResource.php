@@ -54,32 +54,35 @@ class DeliverySettingResource extends JsonResource
 
     private function credentialsMeta(): array
     {
+        /** @var DeliverySetting $settings */
+        $settings = $this->resource;
+
         return [
             'baikal' => [
-                'api_key_set' => filled($this->baikal_api_key),
-                'api_key_hint' => DeliverySetting::maskSecret($this->baikal_api_key),
+                'api_key_set' => $settings->hasUsableEncryptedSecret('baikal_api_key'),
+                'api_key_hint' => $settings->safeMaskedSecret('baikal_api_key'),
             ],
             'dellin' => [
-                'app_key_set' => filled($this->dellin_app_key),
-                'app_key_hint' => DeliverySetting::maskSecret($this->dellin_app_key),
+                'app_key_set' => $settings->hasUsableEncryptedSecret('dellin_app_key'),
+                'app_key_hint' => $settings->safeMaskedSecret('dellin_app_key'),
             ],
             'yandex_delivery' => [
-                'oauth_token_set' => filled($this->yandex_delivery_oauth_token),
-                'oauth_token_hint' => DeliverySetting::maskSecret($this->yandex_delivery_oauth_token),
+                'oauth_token_set' => $settings->hasUsableEncryptedSecret('yandex_delivery_oauth_token'),
+                'oauth_token_hint' => $settings->safeMaskedSecret('yandex_delivery_oauth_token'),
             ],
             'zheldor' => [
-                'login' => $this->zheldor_login,
-                'password_set' => filled($this->zheldor_password),
-                'password_hint' => DeliverySetting::maskSecret($this->zheldor_password),
+                'login' => $settings->zheldor_login,
+                'password_set' => $settings->hasUsableEncryptedSecret('zheldor_password'),
+                'password_hint' => $settings->safeMaskedSecret('zheldor_password'),
             ],
             'cdek' => [
-                'client_id' => $this->cdek_client_id,
-                'client_secret_set' => filled($this->cdek_client_secret),
-                'client_secret_hint' => DeliverySetting::maskSecret($this->cdek_client_secret),
-                'use_test_api' => (bool) $this->cdek_use_test_api,
+                'client_id' => $settings->cdek_client_id,
+                'client_secret_set' => $settings->hasUsableEncryptedSecret('cdek_client_secret'),
+                'client_secret_hint' => $settings->safeMaskedSecret('cdek_client_secret'),
+                'use_test_api' => (bool) $settings->cdek_use_test_api,
             ],
             'russian_post' => [
-                'object_type' => $this->resolveRussianPostObjectType(),
+                'object_type' => $settings->resolveRussianPostObjectType(),
                 'public_api' => true,
             ],
         ];

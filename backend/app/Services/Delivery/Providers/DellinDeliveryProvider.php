@@ -47,7 +47,7 @@ class DellinDeliveryProvider extends AbstractDeliveryProvider
             $result = $client->calculate(
                 $request,
                 $sender,
-                $request->destinationTerminalId,
+                $request->terminalIdFor($this->key()),
             );
             $deliveryDays = $this->extractDeliveryDays($result);
 
